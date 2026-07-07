@@ -1,0 +1,1038 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>語彙ラボ — 日本語の語彙力を育てる</title>
+<meta name="theme-color" content="#a6552e" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="語彙ラボ" />
+<style>
+  :root{
+    --bg:#f6f3ec; --paper:#fffdf8; --ink:#2b2620; --sub:#6d6558;
+    --line:#e2dccf; --accent:#a6552e; --accent-soft:#f0e2d6;
+    --syn:#3f6b4c; --syn-bg:#e7f0e8; --ant:#8a3b3b; --ant-bg:#f3e4e2;
+    --gold:#b08432; --info:#4a72a8; --shadow:0 1px 2px rgba(60,50,35,.06),0 8px 24px rgba(60,50,35,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1c1a16; --paper:#26231d; --ink:#ece5d8; --sub:#a49a89;
+      --line:#3a352c; --accent:#d98a5c; --accent-soft:#3a2d24;
+      --syn:#8fce9f; --syn-bg:#26332a; --ant:#e19a9a; --ant-bg:#33262a;
+      --gold:#d3a955; --info:#7aa6d6; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:20px 18px 80px}
+  header.app{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  header.app h1{
+    font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+    font-size:26px;margin:0;letter-spacing:.06em;font-weight:600;
+  }
+  header.app .tag{color:var(--sub);font-size:13px}
+  .key-status{margin-left:auto;font-size:12px;color:var(--sub);cursor:pointer;
+    border:1px solid var(--line);padding:3px 10px;border-radius:20px;background:var(--paper)}
+  .key-status.ok{color:var(--syn);border-color:var(--syn)}
+
+  /* tabs */
+  nav.tabs{display:flex;gap:4px;margin:16px 0 20px;background:var(--paper);
+    border:1px solid var(--line);border-radius:14px;padding:5px;box-shadow:var(--shadow);overflow-x:auto}
+  nav.tabs button{flex:1 0 auto;white-space:nowrap;border:0;background:transparent;color:var(--sub);
+    font:inherit;font-size:14px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:.15s}
+  nav.tabs button.active{background:var(--accent);color:#fff;box-shadow:var(--shadow)}
+
+  .panel{display:none;animation:fade .25s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* inputs */
+  .row{display:flex;gap:8px}
+  input[type=text],textarea{
+    width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);
+    border-radius:12px;padding:12px 14px;font:inherit;font-size:16px;box-shadow:var(--shadow)}
+  select{width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);
+    border-radius:12px;padding:11px 12px;font:inherit;font-size:15px;box-shadow:var(--shadow)}
+  textarea{min-height:130px;resize:vertical;line-height:1.8}
+  input:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  button.btn{border:0;border-radius:12px;padding:12px 18px;font:inherit;font-size:15px;font-weight:600;
+    background:var(--accent);color:#fff;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;transition:.15s}
+  button.btn:hover{filter:brightness(1.05)}
+  button.btn.ghost{background:var(--paper);color:var(--accent);border:1px solid var(--line)}
+  button.btn:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:12.5px;color:var(--sub);margin:8px 2px}
+
+  /* word card */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    padding:20px;margin-top:16px;box-shadow:var(--shadow)}
+  .card .head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px dashed var(--line);padding-bottom:12px}
+  .card .word{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:30px;font-weight:600;letter-spacing:.04em}
+  .card .reading{color:var(--sub);font-size:15px}
+  .card .level{margin-left:auto;font-size:11px;color:var(--gold);border:1px solid var(--gold);
+    padding:2px 9px;border-radius:20px}
+  .card .meaning{margin:14px 0;font-size:16px}
+  .sec{margin-top:14px}
+  .sec .label{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--sub);margin-bottom:7px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{border-radius:10px;padding:5px 11px;font-size:14px;line-height:1.4;cursor:pointer;transition:.12s;
+    border:1px solid transparent}
+  .chip small{display:block;font-size:11px;opacity:.85;font-weight:400}
+  .chip.syn{background:var(--syn-bg);color:var(--syn)}
+  .chip.ant{background:var(--ant-bg);color:var(--ant)}
+  .chip:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+  .example{background:var(--accent-soft);border-radius:12px;padding:11px 14px;font-size:15px;color:var(--ink)}
+  .card .actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+  /* vocab list */
+  .vitem{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;gap:10px}
+  .vitem .vw{font-family:"Hiragino Mincho ProN",serif;font-size:18px;font-weight:600}
+  .vitem .vr{color:var(--sub);font-size:12px}
+  .vitem .vm{color:var(--sub);font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vitem .del{margin-left:auto;color:var(--ant);opacity:.6;font-size:18px;padding:2px 6px;border-radius:8px}
+  .vitem .del:hover{opacity:1;background:var(--ant-bg)}
+  .stat{display:flex;gap:16px;margin-bottom:14px;color:var(--sub);font-size:13px}
+  .stat b{color:var(--accent);font-size:20px;font-family:"Hiragino Mincho ProN",serif}
+  .chips.catfilter{gap:6px;margin-bottom:16px}
+  .chip.cat{background:var(--paper);border:1px solid var(--line);color:var(--sub);font-size:12.5px}
+  .chip.cat.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .catgroup{margin-bottom:18px}
+  .cathead{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--accent);
+    margin:4px 2px 9px;border-bottom:1px solid var(--line);padding-bottom:5px}
+  .cathead small{color:var(--sub);font-weight:400}
+  .cat-badge{font-size:11px;color:var(--accent);background:var(--accent-soft);padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .memo{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .memo .mt{font-weight:700;font-size:16px;margin-bottom:7px;display:flex;align-items:flex-start;gap:8px}
+  .memo .mt .mact{margin-left:auto;display:flex;gap:5px;flex-shrink:0}
+  .memo .mb{font-size:14px;color:var(--ink);white-space:pre-wrap;line-height:1.75}
+  .iconbtn{color:var(--sub);cursor:pointer;padding:2px 9px;border-radius:8px;font-size:14px;border:1px solid var(--line);background:var(--paper)}
+  .iconbtn:hover{color:var(--accent);border-color:var(--accent)}
+  .iconbtn.danger:hover{color:var(--ant);border-color:var(--ant)}
+  .flabel{display:block;font-size:12px;color:var(--sub);margin:12px 2px 5px;font-weight:600}
+  .famdot{width:11px;height:11px;border-radius:50%;flex-shrink:0;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .famdot.f0{background:var(--ant)} .famdot.f1{background:var(--gold)} .famdot.f2{background:var(--info)} .famdot.f3{background:var(--syn)}
+  .stat{flex-wrap:wrap}
+  .stat .famdot{display:inline-block;vertical-align:-1px;margin-right:5px;cursor:default}
+  .famfilter{gap:6px;margin-bottom:10px}
+  .chip.cat .famdot{display:inline-block;vertical-align:-1px;margin-right:4px;width:9px;height:9px;cursor:inherit}
+  .fam-set{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .famlabel{font-size:12px;color:var(--sub)}
+  .fambtn{border:1px solid var(--line);background:var(--paper);color:var(--sub);border-radius:20px;padding:6px 13px;font:inherit;font-size:13px;cursor:pointer}
+  .fambtn.f0.on{background:var(--ant-bg);color:var(--ant);border-color:var(--ant)}
+  .fambtn.f1.on{background:var(--accent-soft);color:var(--gold);border-color:var(--gold)}
+  .fambtn.f2.on{background:var(--accent-soft);color:var(--info);border-color:var(--info)}
+  .fambtn.f3.on{background:var(--syn-bg);color:var(--syn);border-color:var(--syn)}
+  .fambtn.lvbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chart{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+  .chart-head{font-size:13px;color:var(--sub);margin-bottom:6px}
+  .chart-head b{color:var(--syn)}
+
+  /* quiz */
+  .quiz-q{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;
+    box-shadow:var(--shadow);text-align:center}
+  .quiz-q .qm{font-size:17px;margin-bottom:18px}
+  .quiz-opts{display:grid;gap:9px}
+  .quiz-opts button{border:1px solid var(--line);background:var(--paper);color:var(--ink);
+    border-radius:12px;padding:13px;font:inherit;font-size:16px;cursor:pointer;transition:.12s;
+    font-family:"Hiragino Mincho ProN",serif}
+  .quiz-opts button:hover{border-color:var(--accent)}
+  .quiz-opts button.correct{background:var(--syn-bg);border-color:var(--syn);color:var(--syn)}
+  .quiz-opts button.wrong{background:var(--ant-bg);border-color:var(--ant);color:var(--ant)}
+  .score{text-align:center;color:var(--sub);font-size:13px;margin-bottom:12px}
+
+  /* extract results */
+  .exword{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;background:var(--paper);border:1px solid var(--line);
+    border-radius:12px;padding:11px 14px;margin-bottom:8px;box-shadow:var(--shadow)}
+  .exword .vw{font-family:"Hiragino Mincho ProN",serif;font-size:18px;cursor:pointer}
+  .regbtns{display:flex;gap:4px;margin-left:auto;flex-shrink:0}
+  .regbtn{border:1px solid var(--line);background:var(--paper);color:var(--sub);border-radius:8px;
+    padding:5px 9px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+  .regbtn:hover{border-color:var(--accent)}
+  .regbtn.f0.on{background:var(--ant);color:#fff;border-color:var(--ant)}
+  .regbtn.f1.on{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .regbtn.f2.on{background:var(--info);color:#fff;border-color:var(--info)}
+  .regbtn.f3.on{background:var(--syn);color:#fff;border-color:var(--syn)}
+
+  .empty{text-align:center;color:var(--sub);padding:40px 10px;font-size:14px}
+  .loading{text-align:center;color:var(--sub);padding:24px}
+  .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);
+    border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px;margin-right:8px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .err{background:var(--ant-bg);color:var(--ant);border-radius:12px;padding:12px 14px;font-size:14px;margin-top:12px}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(30,25,18,.5);display:none;align-items:center;
+    justify-content:center;padding:20px;z-index:50}
+  .modal.open{display:flex}
+  .modal .box{background:var(--paper);border-radius:18px;padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow);max-height:88vh;overflow:auto}
+  .modal h2{margin:0 0 6px;font-size:18px}
+  .modal p{color:var(--sub);font-size:13.5px;margin:6px 0 14px}
+  .modal a{color:var(--accent)}
+</style>
+
+<div class="wrap">
+  <header class="app">
+    <h1>語彙ラボ</h1>
+    <span class="tag">日本語の語彙力を、暇つぶしで育てる</span>
+    <span class="key-status" id="keyStatus" onclick="openKey()">APIキー未設定</span>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="active" data-t="look">調べる</button>
+    <button data-t="omakase">おまかせ</button>
+    <button data-t="book">語彙帳</button>
+    <button data-t="quiz">クイズ</button>
+    <button data-t="extract">文章から抽出</button>
+    <button data-t="bulk">まとめて</button>
+    <button data-t="memo">豆知識</button>
+  </nav>
+
+  <!-- 調べる -->
+  <section class="panel active" id="p-look">
+    <div class="row">
+      <input type="text" id="lookInput" placeholder="知らない単語を入力（例：慧眼、忖度、うがつ…）" autocomplete="off"
+             onkeydown="if(event.key==='Enter')lookup()">
+      <button class="btn" id="lookBtn" onclick="lookup()">調べる</button>
+    </div>
+    <div class="hint">思いつかない時は→ <a href="#" onclick="switchTab('omakase');omakase();return false" style="color:var(--accent)">おまかせタブで難語を10個出す</a></div>
+    <div id="lookResult"></div>
+  </section>
+
+  <!-- おまかせ -->
+  <section class="panel" id="p-omakase">
+    <div class="hint" style="margin-top:0">レベルを選んでボタンを押すと、その難易度の語を10個出します。</div>
+    <div class="fam-set" id="levelPick" style="margin:0 0 8px"></div>
+    <div class="fam-set" id="sourcePick" style="margin:0 0 12px"></div>
+    <div class="row"><button class="btn" id="omakaseBtn" onclick="omakase()">10個出す</button></div>
+    <div id="omakaseResult"></div>
+  </section>
+
+  <!-- 語彙帳 -->
+  <section class="panel" id="p-book">
+    <div class="stat" id="bookStat"></div>
+    <div id="bookChart" style="margin:14px 0 4px"></div>
+    <div id="bookList"></div>
+  </section>
+
+  <!-- クイズ -->
+  <section class="panel" id="p-quiz">
+    <div id="quizArea"></div>
+  </section>
+
+  <!-- 抽出 -->
+  <section class="panel" id="p-extract">
+    <textarea id="extractInput" placeholder="小説・ニュース・論文などの文章を貼り付けてください。あなたのレベルより難しそうな語を自動で抜き出します。"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="extractBtn" onclick="extract()">難語を抜き出す</button>
+    </div>
+    <div id="extractResult"></div>
+  </section>
+
+  <!-- まとめて登録 -->
+  <section class="panel" id="p-bulk">
+    <div class="hint" style="margin-top:0">ChatGPT等で調べた単語を貼り付け→まとめて登録。1行1語でも「単語：意味」でも、番号・カンマ区切りでもOK。<br>（コツ：ChatGPTに「覚えたい単語をリストにして」と頼むと貼りやすい）</div>
+    <textarea id="bulkInput" placeholder="例：&#10;慧眼&#10;忖度：相手の心中を推し量ること&#10;1. 邂逅&#10;僥倖、白眉、蓋然性"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="bulkBtn" onclick="bulkAdd()">まとめて解析</button>
+    </div>
+    <div id="bulkResult"></div>
+  </section>
+
+  <!-- 豆知識 -->
+  <section class="panel" id="p-memo">
+    <div class="hint" style="margin-top:0">「蝶と蛾の違い」のような雑学・違い・まとめは、単語ではなく<b>豆知識</b>としてここに。ChatGPTの答えを貼り付けてもOK。</div>
+    <div class="row"><input type="text" id="memoTitle" placeholder="お題（例：蝶と蛾の違い）" autocomplete="off"></div>
+    <textarea id="memoBody" placeholder="内容を貼り付け or メモ。空欄のまま「Geminiに聞く」で自動生成も可。" style="margin-top:8px"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="memoSaveBtn" onclick="saveMemo()">保存</button>
+      <button class="btn ghost" id="memoAskBtn" onclick="askMemo()">Geminiに聞く</button>
+      <button class="btn ghost" id="memoCancelBtn" style="display:none" onclick="cancelMemoEdit()">新規</button>
+    </div>
+    <div id="memoList" style="margin-top:18px"></div>
+  </section>
+
+  <div style="margin-top:26px;padding-top:16px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="hint" style="margin:0 4px 0 0">データはこの端末に保存。念のため定期的に→</span>
+    <button class="btn ghost" onclick="exportData()">⬇ バックアップ保存</button>
+    <label class="btn ghost" style="cursor:pointer">⬆ 復元<input type="file" accept="application/json,.json" style="display:none" onchange="importData(event)"></label>
+  </div>
+</div>
+
+<!-- API key modal -->
+<div class="modal" id="keyModal">
+  <div class="box">
+    <h2>Gemini APIキーを設定（無料）</h2>
+    <p>このアプリは Google の <b>Gemini（無料枠・クレカ不要）</b> を直接呼び出します。キーはこの端末の <b>localStorage にのみ</b>保存され、外部には送りません（Googleへの通信を除く）。共有PCでは注意。<br>
+      キー取得: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>（Googleでログイン→「Create API key」）</p>
+    <input type="text" id="keyInput" placeholder="AIza..." autocomplete="off">
+    <label class="flabel">モデル（無料枠は各モデル別。上限が出たら別のに変えると別枠で使える）</label>
+    <select id="modelSelect">
+      <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite（軽量・上限ゆるめ・推奨）</option>
+      <option value="gemini-2.5-flash">gemini-2.5-flash（高品質・上限きつめ）</option>
+      <option value="gemini-2.0-flash">gemini-2.0-flash（別枠のフォールバック）</option>
+    </select>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="saveKey()">保存</button>
+      <button class="btn ghost" onclick="closeKey()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 単語編集モーダル -->
+<div class="modal" id="editModal">
+  <div class="box">
+    <h2>単語を編集</h2>
+    <label class="flabel">単語</label><input type="text" id="edWord">
+    <label class="flabel">読み</label><input type="text" id="edReading">
+    <label class="flabel">ジャンル</label><input type="text" id="edCategory">
+    <label class="flabel">意味</label><textarea id="edMeaning" style="min-height:80px"></textarea>
+    <label class="flabel">例文</label><textarea id="edExample" style="min-height:56px"></textarea>
+    <label class="flabel">認知度</label>
+    <div class="fam-set" id="edFam" style="margin-top:4px"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" onclick="saveEdit()">保存</button>
+      <button class="btn ghost" onclick="closeEdit()">閉じる</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" style="color:var(--gold);border-color:var(--gold)" onclick="moveToMemo()">豆知識に移す</button>
+      <button class="btn ghost" style="color:var(--ant);border-color:var(--ant)" onclick="deleteEdit()">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- 単語の詳細モーダル -->
+<div class="modal" id="detailModal">
+  <div class="box" style="max-width:520px">
+    <div id="detailBody"></div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" onclick="closeDetail()">閉じる</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const LS_KEY="goilab_apikey", LS_VOCAB="goilab_vocab", LS_MEMO="goilab_memo", LS_MODEL="goilab_model", LS_CACHE="goilab_cache", LS_LEVEL="goilab_level", LS_STREAK="goilab_streak", LS_SOURCE="goilab_source";
+let MODEL=localStorage.getItem("goilab_model")||"gemini-2.5-flash-lite";  // 設定モーダルで変更可
+let vocab = load(LS_VOCAB, []);
+let memos = load(LS_MEMO, []);   // {title,body,ts}
+let shownWord=null;              // 現在カード表示中の語（認知度ボタン用）
+let cardHost=null;               // カードを描画している要素（更新の再描画先）
+
+/* ---------- storage ---------- */
+function load(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function getKey(){return localStorage.getItem(LS_KEY)||""}
+
+/* ---------- Gemini API（無料枠・ブラウザ直叩き・429で自動モデル切替） ---------- */
+const MODELPOOL=["gemini-2.5-flash-lite","gemini-2.0-flash","gemini-2.5-flash"];
+async function callGemini(prompt, schema, maxTokens=2000){
+  const key=getKey();
+  if(!key){openKey();throw new Error("APIキーが未設定です");}
+  const pool=[MODEL,...MODELPOOL.filter(m=>m!==MODEL)];   // 今のモデル→他モデルの順に試す
+  for(let mi=0; mi<pool.length; mi++){
+    const model=pool[mi];
+    const gc={responseMimeType:"application/json",responseSchema:schema,maxOutputTokens:maxTokens};
+    if(/2\.5/.test(model)) gc.thinkingConfig={thinkingBudget:0};  // 思考OFF指定は2.5系のみ対応
+    const body={contents:[{parts:[{text:prompt}]}],generationConfig:gc};
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    let res;
+    for(let attempt=0;attempt<3;attempt++){
+      res=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+      if(res.status!==503 && res.status!==500) break;    // 高負荷(混雑)は少し待って自動リトライ
+      if(attempt<2) await new Promise(r=>setTimeout(r,1500*(attempt+1)));
+    }
+    if(res.status===429 && mi<pool.length-1) continue;   // 上限→自動で次のモデルへ
+    if(!res.ok){
+      let msg=res.status+" "+res.statusText;
+      try{const e=await res.json();msg=e.error?.message||msg;}catch(_){}
+      if(res.status===400 && /API key|API_KEY/i.test(msg)) msg="APIキーが無効です。設定を確認してください。";
+      if(res.status===403) msg="APIキーが無効か権限がありません。設定を確認してください。";
+      if(res.status===429) msg="全モデルで無料枠の上限に達しました。しばらく待つか、明日また試してください（無料枠は日本の昼ごろリセット）。";
+      if(res.status===503||res.status===500) msg="Geminiが一時的に混雑しています（高負荷）。数十秒おいて再試行してください。";
+      throw new Error(msg);
+    }
+    const data=await res.json();
+    if(data.promptFeedback?.blockReason) throw new Error("この語は安全上の理由でブロックされました。別の語で試してください。");
+    const cand=data.candidates?.[0];
+    const text=(cand?.content?.parts||[]).map(p=>p.text).filter(Boolean).join("");
+    if(!text) throw new Error("応答を取得できませんでした。"+(cand?.finishReason?` (${cand.finishReason})`:""));
+    if(model!==MODEL){ MODEL=model; localStorage.setItem(LS_MODEL,MODEL); }  // 通ったモデルを次回優先
+    return JSON.parse(text);
+  }
+}
+
+/* ---------- 結果キャッシュ（一度調べた語はAPIを使わず即表示） ---------- */
+let wordCache=load(LS_CACHE,{});
+function cacheGet(w){return wordCache[w]||null;}
+function cachePut(d){
+  if(!d||!d.word)return;
+  wordCache[d.word]=d;
+  const keys=Object.keys(wordCache);
+  if(keys.length>1500) delete wordCache[keys[0]];   // 古いものをゆるく1件落とす
+  save(LS_CACHE,wordCache);
+}
+async function fetchWord(w){
+  const reg=vocab.find(v=>v.word===w);
+  let d=(reg && reg.synonyms && reg.synonyms.length) ? reg : cacheGet(w);  // 自分の語＞キャッシュ＞API
+  if(!d){ d=await callGemini(wordPrompt(w),WORD_SCHEMA); cachePut(d); }
+  if(reg && d!==reg) d={...d, fam:reg.fam};   // 登録済みなら認知度を反映
+  return d;
+}
+
+/* ---------- schemas ---------- */
+const chip={type:"OBJECT",
+  properties:{word:{type:"STRING"},nuance:{type:"STRING"}},
+  required:["word","nuance"],propertyOrdering:["word","nuance"]};
+const WORD_SCHEMA={type:"OBJECT",
+  properties:{
+    word:{type:"STRING"}, reading:{type:"STRING"}, meaning:{type:"STRING"},
+    synonyms:{type:"ARRAY",items:chip}, antonyms:{type:"ARRAY",items:chip},
+    example:{type:"STRING"}, level:{type:"STRING"}, category:{type:"STRING"}, usage:{type:"STRING"}
+  },
+  required:["word","reading","meaning","synonyms","antonyms","example","level","category","usage"],
+  propertyOrdering:["word","reading","meaning","synonyms","antonyms","example","level","category","usage"]};
+const lightItem={type:"OBJECT",
+  properties:{word:{type:"STRING"},reading:{type:"STRING"},meaning:{type:"STRING"},category:{type:"STRING"}},
+  required:["word","reading","meaning","category"],propertyOrdering:["word","reading","meaning","category"]};
+const EXTRACT_SCHEMA={type:"OBJECT",
+  properties:{words:{type:"ARRAY",items:lightItem}},required:["words"]};
+const OMAKASE_SCHEMA={type:"OBJECT",
+  properties:{words:{type:"ARRAY",items:lightItem}},required:["words"]};
+const BULK_SCHEMA={type:"OBJECT",
+  properties:{words:{type:"ARRAY",items:lightItem}},required:["words"]};
+const MEMO_SCHEMA={type:"OBJECT",properties:{body:{type:"STRING"}},required:["body"]};
+
+/* ---------- prompts ---------- */
+function wordPrompt(w){
+  return `あなたは日本語の語彙学習を助ける辞典です。次の語について、日本語学習者・日本語ネイティブが語彙力を高められるよう解説してください。\n\n語：「${w}」\n\n- reading: ひらがなの読み\n- meaning: 意味を1〜2文で簡潔に\n- synonyms: 類義語を2〜4個。各語に「元の語との使い分け・ニュアンスの違い」をnuanceとして15字程度で\n- antonyms: 対義語を1〜3個（無ければ空配列）。各語のニュアンスも同様に\n- example: その語を使った自然な例文を1つ\n- level: 難易度を「基本」「やや難」「難」「かなり難」のいずれかで\n- category: この語のジャンルを短い日本語で（例：文学、古語、慣用句、哲学、美術、思想、IT、外来語、自然、歴史 など）\n- usage: この語が実際に使われる場面・文脈を1〜2文で（どんな話題・状況・文体で登場するか）\nもし入力が語として不適切・存在しない場合は、最も近い正しい語として解釈して解説してください。`;
+}
+const LEVELS=[
+  {label:"やさしい", desc:"高校〜大学初級レベル。日常でも見かけるが語彙力アップになる、少し背伸びした語。難読漢字・古語・専門用語は避ける。"},
+  {label:"ふつう",   desc:"一般教養レベル。知っていると一目置かれる、やや難しめの語。四字熟語・慣用句・格調高い和語など。"},
+  {label:"むずかしい", desc:"上級レベル。難読語・古語・専門的な語・めったに使わない難語も歓迎。"},
+];
+let genLevel=Math.min(2,Math.max(0,+(localStorage.getItem(LS_LEVEL)??1)));  // 0/1/2、既定=ふつう
+function renderLevelPicker(){
+  const el=document.getElementById("levelPick");
+  if(!el)return;
+  el.innerHTML='<span class="famlabel">レベル：</span>'
+    +LEVELS.map((l,k)=>`<button class="fambtn lvbtn ${genLevel===k?'on':''}" data-k="${k}" onclick="setGenLevel(${k})">${l.label}</button>`).join("");
+}
+function setGenLevel(k){genLevel=k;localStorage.setItem(LS_LEVEL,k);renderLevelPicker();}
+const SOURCES=[
+  {label:"すべて",       desc:""},
+  {label:"四字熟語",     desc:"必ず四字熟語だけを選ぶこと。"},
+  {label:"故事成語",     desc:"必ず故事成語（由来のある成句）だけを選ぶこと。"},
+  {label:"古語・古文風", desc:"必ず古語・古文で使われる雅な言い回しだけを選ぶこと。"},
+  {label:"慣用句",       desc:"必ず慣用句・言い回しだけを選ぶこと。"},
+];
+let genSource=Math.min(SOURCES.length-1,Math.max(0,+(localStorage.getItem(LS_SOURCE)??0)));
+function renderSourcePicker(){
+  const el=document.getElementById("sourcePick");
+  if(!el)return;
+  el.innerHTML='<span class="famlabel">ジャンル：</span>'
+    +SOURCES.map((s,k)=>`<button class="fambtn lvbtn ${genSource===k?'on':''}" data-k="${k}" onclick="setGenSource(${k})">${s.label}</button>`).join("");
+}
+function setGenSource(k){genSource=k;localStorage.setItem(LS_SOURCE,k);renderSourcePicker();}
+function omakasePrompt(){
+  const recent=vocab.slice(-60).map(v=>v.word).join("、");
+  const lv=LEVELS[genLevel]||LEVELS[1];
+  const sc=SOURCES[genSource]||SOURCES[0];
+  return `日本語の語彙力を高めるのにちょうど良い語を10個選んでください。難易度の基準：${lv.desc}${sc.desc?`\n${sc.desc}`:`\n暇つぶしに学んで面白いものを、ジャンルをなるべくばらけさせて選んでください。`}\n難しすぎて実用性のないものは避けてください。\n\n次の語は既に出したので避けてください：${recent||"（なし）"}\n\n各語について word（語）・reading（ひらがなの読み）・meaning（簡潔な意味）・category（短いジャンル名）を返してください。`;
+}
+function extractPrompt(text){
+  return `次の文章から、日本語の語彙力を高める価値のある「やや難しめの語」だけを抽出してください。基本的で誰でも知っている語は除外し、知らない人が多そうな難語・慣用句・四字熟語・格調高い表現を優先してください。最大12語まで。\n\n各語について word（文章中の表記）・reading（ひらがな）・meaning（簡潔な意味）・category（短いジャンル名）を返してください。該当語が無ければ空配列を返してください。\n\n--- 文章 ---\n${text.slice(0,6000)}`;
+}
+function bulkPrompt(text){
+  return `次のテキストは、ユーザーが覚えたい語（日本語・古語・慣用句・外来語・作品名などを含む）のリストです。絵文字付きの大見出しや小見出し（ジャンル名）と語が混在し、番号・箇条書き・「単語：意味」・カンマ区切りなど形式は様々です。\n\nここに列挙された「覚えたい項目」を、見出し行そのものは除いて1つずつ漏れなく取り出してください（重複は1つにまとめる）。項目数の上限はありません。テキスト中の全項目を返してください。\n\n各項目について:\n- reading: ひらがなの読み（外来語・ローマ字・記号など読みが不要なものは空文字でよい）\n- meaning: 意味を1〜2文で簡潔に\n- category: その項目が属するジャンル。テキスト中に見出し（例：文学・古語・慣用句、美術・哲学・思想、IT・プログラミング 等）があればそれを短くして使い、無ければ推測して短い日本語のジャンル名を付ける\n\n--- リスト ---\n${text.slice(0,12000)}`;
+}
+function memoPrompt(t){
+  return `次のお題について、雑学・豆知識として役立つ説明を日本語で簡潔にまとめてください（要点は箇条書きにしてよい、400字程度まで）。\n\nお題：「${t}」`;
+}
+
+/* ---------- 調べる ---------- */
+async function lookup(){
+  const w=document.getElementById("lookInput").value.trim();
+  if(!w) return;
+  await renderWord(w, document.getElementById("lookResult"), document.getElementById("lookBtn"));
+}
+let lastOmakase=[];
+async function omakase(){
+  const out=document.getElementById("omakaseResult");
+  const btn=document.getElementById("omakaseBtn");
+  out.innerHTML=`<div class="loading"><span class="spin"></span>難語を10個選んでいます…</div>`;
+  if(btn)btn.disabled=true;
+  try{
+    const d=await callGemini(omakasePrompt(),OMAKASE_SCHEMA,4000);
+    if(!d.words||!d.words.length){out.innerHTML=`<div class="empty">語を取得できませんでした。もう一度お試しください。</div>`;return;}
+    lastOmakase=d.words;
+    out.innerHTML=allBtnsHTML("addAllOmakase")
+      +`<div style="margin:2px 0 8px"><button class="btn ghost" onclick="omakase()">別の10語</button></div>`
+      +`<div class="hint">行ごとにレベルを選んで登録／語をタップで詳しく／同じレベルを再クリックで解除</div>`
+      +d.words.map(rowHTML).join("");
+  }catch(e){out.innerHTML=`<div class="err">${esc(e.message)}</div>`;}
+  finally{ if(btn)btn.disabled=false; }
+}
+function addAllOmakase(k){addAllInto(lastOmakase,k,"omakaseResult");}
+async function renderWord(w,out,btn){
+  out.innerHTML=`<div class="loading"><span class="spin"></span>「${esc(w)}」を調べています…</div>`;
+  if(btn)btn.disabled=true;
+  try{
+    const d=await fetchWord(w);
+    cardHost=out; shownWord=d;
+    out.innerHTML=wordCardHTML(d,true);
+  }catch(e){
+    out.innerHTML=`<div class="err">${esc(e.message)}</div>`;
+  }finally{ if(btn)btn.disabled=false; }
+}
+function wordCardHTML(d,showSave){
+  const chipHTML=(arr,cls)=>(arr&&arr.length)?arr.map(c=>
+    `<span class="chip ${cls}" onclick="showDetail('${esc(c.word)}')">${esc(c.word)}<small>${esc(c.nuance||"")}</small></span>`).join(""):`<span class="hint">—</span>`;
+  const saved=vocab.some(v=>v.word===d.word);
+  return `<div class="card">
+    <div class="head">
+      <span class="word">${esc(d.word)}</span>
+      <span class="reading">${esc(d.reading||"")}</span>
+      ${d.category?`<span class="cat-badge">${esc(d.category)}</span>`:""}
+      <span class="level">${esc(d.level||"")}</span>
+    </div>
+    <div class="meaning">${esc(d.meaning||"")}</div>
+    <div class="sec"><div class="label">類義語</div><div class="chips">${chipHTML(d.synonyms,"syn")}</div></div>
+    <div class="sec"><div class="label">対義語</div><div class="chips">${chipHTML(d.antonyms,"ant")}</div></div>
+    <div class="sec"><div class="label">例文</div><div class="example">${esc(d.example||"")}</div></div>
+    ${d.usage?`<div class="sec"><div class="label">使われる場面</div><div class="example">${esc(d.usage)}</div></div>`:""}
+    ${showSave?`<div class="actions">
+      <button class="btn ${saved?'ghost':''}" onclick='saveWord(${escAttr(d)})'>${saved?'✓ 登録済み（クリックで最新に更新）':'＋ 語彙帳に登録'}</button>
+    </div>
+    <div class="fam-set">
+      <span class="famlabel">認知度：</span>
+      <button class="fambtn f0 ${(d.fam||0)===0?'on':''}" onclick="setFamFromCard(0)">知らない</button>
+      <button class="fambtn f1 ${d.fam===1?'on':''}" onclick="setFamFromCard(1)">あやふや</button>
+      <button class="fambtn f2 ${d.fam===2?'on':''}" onclick="setFamFromCard(2)">知ってる</button>
+      <button class="fambtn f3 ${d.fam===3?'on':''}" onclick="setFamFromCard(3)">覚えた！</button>
+    </div>`:""}
+  </div>`;
+}
+function closeDetail(){document.getElementById("detailModal").classList.remove("open");}
+async function showDetail(w){
+  const body=document.getElementById("detailBody");
+  cardHost=body;
+  document.getElementById("detailModal").classList.add("open");
+  body.innerHTML=`<div class="loading"><span class="spin"></span>「${esc(w)}」を調べています…</div>`;
+  try{
+    const d=await fetchWord(w);
+    shownWord=d;
+    body.innerHTML=wordCardHTML(d,true);
+  }catch(e){ body.innerHTML=`<div class="err">${esc(e.message)}</div>`; }
+}
+function saveWord(d){
+  const idx=vocab.findIndex(v=>v.word===d.word);
+  if(idx>=0){ // 既存を最新情報で上書き（学習履歴・認知度は維持）
+    d.ts=vocab[idx].ts; d.due=vocab[idx].due; d.streak=vocab[idx].streak||0;
+    if(d.fam===undefined) d.fam=vocab[idx].fam||0;
+    vocab[idx]=d;
+  }else{
+    d.ts=Date.now(); d.due=Date.now(); d.streak=0;
+    if(d.fam===undefined) d.fam=0;
+    vocab.push(d);
+  }
+  markStudied();
+  save(LS_VOCAB,vocab); refreshBook();
+  shownWord=d;
+  if(cardHost) cardHost.innerHTML=wordCardHTML(d,true);
+}
+function setFamFromCard(f){
+  if(!shownWord)return;
+  shownWord.fam=f;
+  if(f===3 && !shownWord.masteredAt) shownWord.masteredAt=Date.now();
+  saveWord(shownWord);
+}
+
+/* ---------- 語彙帳 ---------- */
+let bookFilter="__all", famFilter=-1, curCats=[];
+const FAM=[{l:"知らない",c:"f0"},{l:"あやふや",c:"f1"},{l:"知ってる",c:"f2"},{l:"覚えた",c:"f3"}];
+function catOf(v){return (v.category&&v.category.trim())||"未分類";}
+function famOf(v){return v.fam||0;}
+function cycleFam(i){vocab[i].fam=((vocab[i].fam||0)+1)%3;save(LS_VOCAB,vocab);refreshBook();}
+function setFam(k){famFilter=k;refreshBook();}
+function vitemHTML(v){
+  const i=vocab.indexOf(v), f=famOf(v);
+  return `<div class="vitem" onclick="showDetail('${esc(v.word)}')">
+      <span class="famdot f${f}" onclick="event.stopPropagation();cycleFam(${i})" title="認知度（クリックで切替）"></span>
+      <span class="vw">${esc(v.word)}</span>
+      <span class="vr">${esc(v.reading||"")}</span>
+      <span class="vm">${esc(v.meaning||"")}</span>
+      <span class="del" onclick="event.stopPropagation();openEdit(${i})" title="編集">✎</span>
+      <span class="del" onclick="event.stopPropagation();delWord(${i})" title="削除">×</span>
+    </div>`;
+}
+function chartMs(daysAgo){const d=new Date();d.setHours(23,59,59,999);d.setDate(d.getDate()-daysAgo);return d.getTime();}
+function buildChart(){
+  if(!vocab.length) return "";
+  const firstTs=Math.min(...vocab.map(v=>v.ts||Date.now()));
+  const spanDays=Math.max(0,Math.ceil((Date.now()-firstTs)/864e5));
+  const N=Math.max(7,Math.min(30,spanDays+1));
+  const days=[];
+  for(let i=N-1;i>=0;i--){
+    const end=chartMs(i);
+    const total=vocab.filter(v=>(v.ts||0)<=end).length;
+    const mastered=vocab.filter(v=>v.fam===3 && ((v.masteredAt||v.ts)<=end)).length;
+    days.push({total,mastered});
+  }
+  const W=320,H=110,pad=6;
+  const maxY=Math.max(1,...days.map(d=>d.total));
+  const X=i=>pad+i*(W-2*pad)/(N-1);
+  const Y=v=>H-pad-(v/maxY)*(H-2*pad);
+  const pts=key=>days.map((d,i)=>`${X(i).toFixed(1)},${Y(d[key]).toFixed(1)}`).join(" ");
+  const area=`${pad.toFixed(1)},${(H-pad).toFixed(1)} ${pts("mastered")} ${X(N-1).toFixed(1)},${(H-pad).toFixed(1)}`;
+  const cur=days[days.length-1];
+  return `<div class="chart">
+    <div class="chart-head"><b>覚えた ${cur.mastered}</b> 語 ／ 累計 ${cur.total} 語（直近${N}日の推移）</div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:120px;display:block">
+      <polygon points="${area}" style="fill:var(--syn);opacity:.16"/>
+      <polyline points="${pts("total")}" style="fill:none;stroke:var(--accent);stroke-width:1.5;opacity:.45;vector-effect:non-scaling-stroke"/>
+      <polyline points="${pts("mastered")}" style="fill:none;stroke:var(--syn);stroke-width:2;vector-effect:non-scaling-stroke"/>
+    </svg>
+  </div>`;
+}
+function refreshBook(){
+  const list=document.getElementById("bookList"), stat=document.getElementById("bookStat");
+  const cc=[0,1,2,3].map(k=>vocab.filter(v=>famOf(v)===k).length);
+  const weekN=vocab.filter(v=>(v.ts||0)>=Date.now()-7*864e5).length;
+  const streak=getStreak();
+  stat.innerHTML=`<div><b>${vocab.length}</b> 語</div>`
+    +`<div>今週 <b>+${weekN}</b></div>`
+    +`<div>🔥 <b>${streak}</b> 日連続</div>`
+    +`<div><span class="famdot f3"></span> 覚えた <b>${cc[3]}</b></div>`
+    +`<div><span class="famdot f2"></span> 知ってる <b>${cc[2]}</b></div>`
+    +`<div><span class="famdot f1"></span> あやふや <b>${cc[1]}</b></div>`
+    +`<div><span class="famdot f0"></span> 知らない <b>${cc[0]}</b></div>`;
+  const _ch=document.getElementById("bookChart"); if(_ch) _ch.innerHTML=buildChart();
+  if(!vocab.length){list.innerHTML=`<div class="empty">まだ語がありません。<br>「調べる」「おまかせ」「まとめて」で語を貯めましょう。</div>`;return;}
+  const famChips=`<div class="chips famfilter">`
+    +`<span class="chip cat ${famFilter<0?"on":""}" onclick="setFam(-1)">すべて</span>`
+    +FAM.map((f,k)=>`<span class="chip cat ${famFilter===k?"on":""}" onclick="setFam(${k})"><span class="famdot ${f.c}"></span> ${f.l} ${vocab.filter(v=>famOf(v)===k).length}</span>`).join("")
+    +`</div>`;
+  const passed=vocab.filter(v=>famFilter<0||famOf(v)===famFilter);
+  curCats=[...new Set(passed.map(catOf))];
+  if(bookFilter!=="__all"&&!curCats.includes(bookFilter))bookFilter="__all";
+  const catChips=`<div class="chips catfilter">`
+    +`<span class="chip cat ${bookFilter==="__all"?"on":""}" onclick="setFilter(-1)">すべて ${passed.length}</span>`
+    +curCats.map((c,i)=>`<span class="chip cat ${bookFilter===c?"on":""}" onclick="setFilter(${i})">${esc(c)} ${passed.filter(v=>catOf(v)===c).length}</span>`).join("")
+    +`</div>`;
+  let body;
+  if(!passed.length){body=`<div class="empty">この条件の語はありません。</div>`;}
+  else if(bookFilter==="__all"){
+    body=curCats.map(c=>{const items=passed.filter(v=>catOf(v)===c);
+      return `<div class="catgroup"><div class="cathead">${esc(c)} <small>${items.length}</small></div>`
+        +[...items].reverse().map(vitemHTML).join("")+`</div>`;}).join("");
+  }else{
+    body=[...passed.filter(v=>catOf(v)===bookFilter)].reverse().map(vitemHTML).join("");
+  }
+  list.innerHTML=famChips+catChips+body;
+}
+function setFilter(i){bookFilter=i<0?"__all":curCats[i];refreshBook();}
+function delWord(i){vocab.splice(i,1);save(LS_VOCAB,vocab);refreshBook();}
+
+/* ---------- クイズ ---------- */
+/* ---------- 連続学習（ストリーク） ---------- */
+function _dstr(ms){const d=new Date(ms);const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+function markStudied(){
+  const s=load(LS_STREAK,{last:"",count:0});
+  const today=_dstr(Date.now());
+  if(s.last===today) return;
+  s.count=(s.last===_dstr(Date.now()-864e5))?(s.count+1):1;
+  s.last=today; save(LS_STREAK,s);
+}
+function getStreak(){
+  const s=load(LS_STREAK,{last:"",count:0});
+  return (s.last===_dstr(Date.now())||s.last===_dstr(Date.now()-864e5))?s.count:0;
+}
+
+/* ---------- クイズ（今日の10問・忘却曲線） ---------- */
+const SRS_DAYS=[0,1,3,7,16,35,70];   // 正解を重ねるほど次の出題を先送り（忘却曲線）
+function schedule(v,ok){
+  v.box = ok ? Math.min((v.box||0)+1, SRS_DAYS.length-1) : 0;
+  v.due = Date.now() + SRS_DAYS[v.box]*864e5;
+}
+// 出題する語：復習期限が来た語 ＞ まだ覚えてない語 ＞ 全部
+function pickAnswer(){
+  const now=Date.now();
+  const due=vocab.filter(v=>(v.fam||0)<3 && (v.due||0)<=now);
+  if(due.length) return due[Math.floor(Math.random()*due.length)];
+  const weak=vocab.filter(v=>(v.fam||0)<3);
+  const pool=weak.length?weak:vocab;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+let quizState=null, quizMissOnly=false, session=null;
+function toggleMissOnly(){ session=null; quizMissOnly=!quizMissOnly; startQuiz(); }
+function startDaily(){
+  if(vocab.length<4) return startQuiz();
+  const now=Date.now();
+  let pool=vocab.filter(v=>(v.fam||0)<3 && (v.due||0)<=now);   // 期限切れ優先
+  const push=arr=>{ for(const v of arr){ if(pool.length>=10)break; if(!pool.includes(v))pool.push(v); } };
+  push(vocab.filter(v=>(v.fam||0)<3));   // まだ覚えてない語で補充
+  push([...vocab]);                      // それでも足りなければ全部
+  pool=[...pool]; shuffle(pool);
+  session={words:pool.slice(0,10), i:0, correct:0, missed:[]};
+  quizState=quizState||{total:0,correct:0};
+  startQuiz();
+}
+function startQuiz(){
+  const area=document.getElementById("quizArea");
+  if(vocab.length<4){
+    area.innerHTML=`<div class="empty">クイズには4語以上が必要です。<br>今：${vocab.length}語。もう少し貯めましょう。</div>`;return;
+  }
+  if(!quizState) quizState={total:0,correct:0};
+  if(session && session.i>=session.words.length) return showResults();
+
+  let answer;
+  if(session){
+    answer=session.words[session.i];
+  }else if(quizMissOnly){
+    const miss=vocab.filter(v=>v.miss);
+    if(!miss.length){
+      area.innerHTML=`<div class="empty">間違えた語はありません 👏<br><button class="btn ghost" style="margin-top:12px" onclick="toggleMissOnly()">通常クイズに戻る</button></div>`;return;
+    }
+    answer=miss[Math.floor(Math.random()*miss.length)];
+  }else{
+    answer=pickAnswer();
+  }
+
+  const opts=[answer];
+  let guard=0;
+  while(opts.length<4 && guard++<300){
+    const c=vocab[Math.floor(Math.random()*vocab.length)];
+    if(!opts.some(o=>o.word===c.word)) opts.push(c);
+  }
+  shuffle(opts);
+
+  const missCount=vocab.filter(v=>v.miss).length;
+  const bar = session
+    ? `<div class="score">今日の10問　${session.i+1} / ${session.words.length}（正解 ${session.correct}）</div>`
+    : `<div class="score">正解 ${quizState.correct} / ${quizState.total}
+        <button class="btn" style="padding:4px 11px;font-size:12px;margin-left:8px" onclick="startDaily()">今日の10問</button>
+        <button class="btn ghost" style="padding:4px 11px;font-size:12px" onclick="toggleMissOnly()">${quizMissOnly?'✓ 間違えた語だけ':'間違えた語だけ ('+missCount+')'}</button>
+      </div>`;
+  area.innerHTML=`
+    ${bar}
+    <div class="quiz-q">
+      <div class="qm">「${esc(answer.meaning)}」<br><span style="color:var(--sub);font-size:13px">に当てはまる語は？</span></div>
+      <div class="quiz-opts" id="qopts">
+        ${opts.map(o=>`<button onclick='answerQuiz(this,"${esc(o.word)}","${esc(answer.word)}")'>${esc(o.word)}</button>`).join("")}
+      </div>
+    </div>`;
+}
+function answerQuiz(btn,chosen,correct){
+  const buttons=document.querySelectorAll("#qopts button");
+  buttons.forEach(b=>b.disabled=true);
+  const v=vocab.find(x=>x.word===correct);
+  const ok=chosen===correct;
+  if(ok){ btn.classList.add("correct"); }
+  else{
+    btn.classList.add("wrong");
+    buttons.forEach(b=>{if(b.textContent===correct)b.classList.add("correct");});
+  }
+  if(v){
+    if(ok){ v.fam=3; v.miss=false; if(!v.masteredAt) v.masteredAt=Date.now(); }
+    else { v.miss=true; if((v.fam||0)>=2) v.fam=1; }
+    schedule(v,ok);   // 忘却曲線で次回出題を設定
+  }
+  if(session){
+    if(ok) session.correct++; else session.missed.push(correct);
+    session.i++;
+  }else{
+    quizState.total++; if(ok) quizState.correct++;
+  }
+  markStudied();
+  save(LS_VOCAB,vocab);
+  setTimeout(startQuiz,900);
+}
+function showResults(){
+  const s=session; session=null;
+  const area=document.getElementById("quizArea");
+  const pct=Math.round(s.correct/s.words.length*100);
+  const missed=[...new Set(s.missed)];
+  area.innerHTML=`
+    <div class="quiz-q" style="text-align:center">
+      <div class="qm">今日の10問 完了！</div>
+      <div style="font-size:34px;font-weight:700;color:var(--accent);margin:6px 0">${s.correct} / ${s.words.length}</div>
+      <div class="hint" style="margin:0 0 14px">正答率 ${pct}%　🔥 ${getStreak()}日連続</div>
+      ${missed.length
+        ? `<div class="label">間違えた語（タップで詳しく）</div><div class="chips" style="justify-content:center">${missed.map(w=>`<span class="chip ant" onclick="showDetail('${esc(w)}')">${esc(w)}</span>`).join("")}</div>`
+        : `<div style="color:var(--syn);font-weight:700">全問正解！ 🎉</div>`}
+      <div class="actions" style="justify-content:center;margin-top:16px">
+        <button class="btn" onclick="startDaily()">もう一度10問</button>
+        <button class="btn ghost" onclick="startQuiz()">エンドレス練習</button>
+      </div>
+    </div>`;
+}
+
+/* ---------- 抽出 ---------- */
+async function extract(){
+  const text=document.getElementById("extractInput").value.trim();
+  const out=document.getElementById("extractResult");
+  const btn=document.getElementById("extractBtn");
+  if(!text){out.innerHTML=`<div class="err">文章を入力してください。</div>`;return;}
+  out.innerHTML=`<div class="loading"><span class="spin"></span>難語を抜き出しています…</div>`;
+  btn.disabled=true;
+  try{
+    const d=await callGemini(extractPrompt(text),EXTRACT_SCHEMA,3000);
+    if(!d.words||!d.words.length){out.innerHTML=`<div class="empty">抽出できる難語が見つかりませんでした。</div>`;return;}
+    lastExtract=d.words;
+    out.innerHTML=allBtnsHTML("addAllExtract")
+      +`<div class="hint">${d.words.length}語みつかりました。行ごとにレベルを選んで登録／語をタップで詳しく。</div>`
+      +d.words.map(rowHTML).join("");
+  }catch(e){out.innerHTML=`<div class="err">${esc(e.message)}</div>`;}
+  finally{btn.disabled=false;}
+}
+const REGLABEL=["知らない","あやふや","知ってる"];   // 登録時に選べるのはこの3つ（覚えた！はクイズで到達）
+function famBtnsHTML(w){
+  const reg=vocab.find(v=>v.word===w.word), cur=reg?famOf(reg):-1;
+  return [0,1,2].map(k=>`<button class="regbtn f${k} ${cur===k?'on':''}" onclick='regWord(this,${escAttr(w)},${k})'>${REGLABEL[k]}</button>`).join("");
+}
+function rowHTML(w){
+  return `<div class="exword" data-word="${esc(w.word)}">
+    <span class="vw" onclick="showDetail('${esc(w.word)}')">${esc(w.word)}</span>
+    <span class="vr">${esc(w.reading||"")}</span>
+    ${w.category?`<span class="cat-badge">${esc(w.category)}</span>`:""}
+    <span class="vm" style="flex:1;min-width:120px;color:var(--sub);font-size:13px">${esc(w.meaning||"")}</span>
+    <span class="regbtns">${famBtnsHTML(w)}</span>
+  </div>`;
+}
+function regWord(btn,w,k){
+  const idx=vocab.findIndex(v=>v.word===w.word);
+  if(idx>=0){
+    if(famOf(vocab[idx])===k) vocab.splice(idx,1);   // 同じレベルを再クリック→解除
+    else vocab[idx].fam=k;                           // 別レベル→付け替え
+  }else{
+    vocab.push({...w,synonyms:w.synonyms||[],antonyms:w.antonyms||[],example:w.example||"",level:w.level||"",category:w.category||"",fam:k,ts:Date.now(),due:Date.now(),streak:0});
+  }
+  markStudied();
+  save(LS_VOCAB,vocab); refreshBook();
+  const row=btn.closest(".exword");
+  if(row) row.querySelector(".regbtns").innerHTML=famBtnsHTML(w);
+}
+function allBtnsHTML(fn){
+  return `<div class="fam-set" style="margin:8px 0 8px"><span class="famlabel">全部を登録：</span>`
+    +[0,1,2].map(k=>`<button class="fambtn f${k}" onclick="${fn}(${k})">${REGLABEL[k]}</button>`).join("")
+    +`</div>`;
+}
+function addAllInto(words,k,containerId){
+  words.forEach(w=>{
+    const idx=vocab.findIndex(v=>v.word===w.word);
+    if(idx>=0) vocab[idx].fam=k;
+    else vocab.push({...w,synonyms:w.synonyms||[],antonyms:w.antonyms||[],example:w.example||"",level:w.level||"",category:w.category||"",fam:k,ts:Date.now(),due:Date.now(),streak:0});
+  });
+  markStudied();
+  save(LS_VOCAB,vocab); refreshBook();
+  document.querySelectorAll("#"+containerId+" .exword").forEach(row=>{
+    const wobj=words.find(x=>x.word===row.dataset.word);
+    if(wobj) row.querySelector(".regbtns").innerHTML=famBtnsHTML(wobj);
+  });
+}
+let lastExtract=[];
+function addAllExtract(k){addAllInto(lastExtract,k,"extractResult");}
+
+/* ---------- まとめて登録 ---------- */
+let lastBulk=[];
+async function bulkAdd(){
+  const text=document.getElementById("bulkInput").value.trim();
+  const out=document.getElementById("bulkResult");
+  const btn=document.getElementById("bulkBtn");
+  if(!text){out.innerHTML=`<div class="err">単語を貼り付けてください。</div>`;return;}
+  out.innerHTML=`<div class="loading"><span class="spin"></span>単語を解析しています…</div>`;
+  btn.disabled=true;
+  try{
+    const d=await callGemini(bulkPrompt(text),BULK_SCHEMA,40000);
+    if(!d.words||!d.words.length){out.innerHTML=`<div class="empty">登録できる語が見つかりませんでした。</div>`;return;}
+    lastBulk=d.words;
+    out.innerHTML=allBtnsHTML("addAllBulk")
+      +`<div class="hint">行ごとにレベルを選んで登録／語をタップで詳しく／同じレベルを再クリックで解除</div>`
+      +d.words.map(rowHTML).join("");
+  }catch(e){
+    const m=/JSON|Unexpected|token/i.test(e.message)?"語が多すぎて応答が途中で切れました。リストを半分ずつに分けて試してください。":e.message;
+    out.innerHTML=`<div class="err">${esc(m)}</div>`;
+  }
+  finally{btn.disabled=false;}
+}
+function addAllBulk(k){addAllInto(lastBulk,k,"bulkResult");}
+
+/* ---------- 豆知識 ---------- */
+let memoEdit=-1;
+function refreshMemo(){
+  const list=document.getElementById("memoList");
+  if(!memos.length){list.innerHTML=`<div class="empty">まだ豆知識がありません。<br>「違い」「由来」「まとめ」系の雑学をここに。</div>`;return;}
+  let html="";
+  for(let i=memos.length-1;i>=0;i--){
+    const m=memos[i];
+    html+=`<div class="memo">
+      <div class="mt">${esc(m.title||"（無題）")}
+        <span class="mact">
+          <span class="iconbtn" onclick="editMemo(${i})">✎</span>
+          <span class="iconbtn danger" onclick="delMemo(${i})">×</span>
+        </span>
+      </div>
+      <div class="mb">${esc(m.body||"")}</div>
+    </div>`;
+  }
+  list.innerHTML=html;
+}
+function saveMemo(){
+  const t=document.getElementById("memoTitle").value.trim();
+  const b=document.getElementById("memoBody").value.trim();
+  if(!t&&!b)return;
+  if(memoEdit>=0){memos[memoEdit].title=t;memos[memoEdit].body=b;}
+  else memos.push({title:t,body:b,ts:Date.now()});
+  save(LS_MEMO,memos); cancelMemoEdit(); refreshMemo();
+}
+function editMemo(i){
+  memoEdit=i;
+  document.getElementById("memoTitle").value=memos[i].title||"";
+  document.getElementById("memoBody").value=memos[i].body||"";
+  document.getElementById("memoSaveBtn").textContent="更新";
+  document.getElementById("memoCancelBtn").style.display="";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function cancelMemoEdit(){
+  memoEdit=-1;
+  document.getElementById("memoTitle").value="";
+  document.getElementById("memoBody").value="";
+  document.getElementById("memoSaveBtn").textContent="保存";
+  document.getElementById("memoCancelBtn").style.display="none";
+}
+function delMemo(i){memos.splice(i,1);save(LS_MEMO,memos);if(memoEdit===i)cancelMemoEdit();refreshMemo();}
+async function askMemo(){
+  const t=document.getElementById("memoTitle").value.trim();
+  if(!t){alert("お題を入力してください（例：蝶と蛾の違い）");return;}
+  const btn=document.getElementById("memoAskBtn"), old=btn.textContent;
+  btn.disabled=true; btn.textContent="生成中…";
+  try{
+    const d=await callGemini(memoPrompt(t),MEMO_SCHEMA,4000);
+    document.getElementById("memoBody").value=d.body||"";
+  }catch(e){alert(e.message);}
+  finally{btn.disabled=false;btn.textContent=old;}
+}
+
+/* ---------- 単語の編集 ---------- */
+let editIdx=-1, editFamVal=0;
+function renderEditFam(){
+  const labels=["知らない","あやふや","知ってる","覚えた！"];
+  document.getElementById("edFam").innerHTML=FAM.map((f,k)=>
+    `<button class="fambtn ${f.c} ${editFamVal===k?'on':''}" onclick="setEditFam(${k})">${labels[k]}</button>`).join("");
+}
+function setEditFam(k){editFamVal=k;renderEditFam();}
+function openEdit(i){
+  editIdx=i; const v=vocab[i];
+  document.getElementById("edWord").value=v.word||"";
+  document.getElementById("edReading").value=v.reading||"";
+  document.getElementById("edCategory").value=v.category||"";
+  document.getElementById("edMeaning").value=v.meaning||"";
+  document.getElementById("edExample").value=v.example||"";
+  editFamVal=v.fam||0; renderEditFam();
+  document.getElementById("editModal").classList.add("open");
+}
+function closeEdit(){document.getElementById("editModal").classList.remove("open");editIdx=-1;}
+function saveEdit(){
+  if(editIdx<0)return; const v=vocab[editIdx];
+  const w=document.getElementById("edWord").value.trim();
+  if(w)v.word=w;
+  v.reading=document.getElementById("edReading").value.trim();
+  v.category=document.getElementById("edCategory").value.trim();
+  v.meaning=document.getElementById("edMeaning").value.trim();
+  v.example=document.getElementById("edExample").value.trim();
+  v.fam=editFamVal;
+  if(editFamVal===3 && !v.masteredAt) v.masteredAt=Date.now();
+  save(LS_VOCAB,vocab); refreshBook(); closeEdit();
+}
+function deleteEdit(){if(editIdx<0)return;vocab.splice(editIdx,1);save(LS_VOCAB,vocab);refreshBook();closeEdit();}
+function moveToMemo(){
+  if(editIdx<0)return; const v=vocab[editIdx];
+  const title=document.getElementById("edWord").value.trim()||v.word;
+  const mean=document.getElementById("edMeaning").value.trim()||v.meaning||"";
+  const ex=document.getElementById("edExample").value.trim()||v.example||"";
+  memos.push({title,body:mean+(ex?("\n\n例："+ex):""),ts:Date.now()});
+  save(LS_MEMO,memos);
+  vocab.splice(editIdx,1); save(LS_VOCAB,vocab);
+  refreshBook(); refreshMemo(); closeEdit();
+  switchTab("memo"); window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- tabs ---------- */
+function switchTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.t===t));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="p-"+t));
+  if(t==="book")refreshBook();
+  if(t==="quiz")startQuiz();
+  if(t==="memo")refreshMemo();
+}
+document.getElementById("tabs").addEventListener("click",e=>{
+  if(e.target.dataset.t)switchTab(e.target.dataset.t);
+});
+
+/* ---------- key modal ---------- */
+function openKey(){document.getElementById("keyInput").value=getKey();document.getElementById("modelSelect").value=MODEL;document.getElementById("keyModal").classList.add("open");}
+function closeKey(){document.getElementById("keyModal").classList.remove("open");}
+function saveKey(){
+  const k=document.getElementById("keyInput").value.trim();
+  if(k)localStorage.setItem(LS_KEY,k); else localStorage.removeItem(LS_KEY);
+  MODEL=document.getElementById("modelSelect").value; localStorage.setItem(LS_MODEL,MODEL);
+  closeKey();updateKeyStatus();
+}
+function updateKeyStatus(){
+  const el=document.getElementById("keyStatus");
+  if(getKey()){el.textContent="APIキー設定済み";el.classList.add("ok");}
+  else{el.textContent="APIキー未設定";el.classList.remove("ok");}
+}
+
+/* ---------- utils ---------- */
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function escAttr(o){return esc(JSON.stringify(o));}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ---------- バックアップ（書き出し / 復元） ---------- */
+function exportData(){
+  const data={app:"goi-lab",version:1,exportedAt:new Date().toISOString(),vocab,memos};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  a.download=`goi-lab-backup-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importData(ev){
+  const file=ev.target.files&&ev.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!data||!Array.isArray(data.vocab)) throw new Error("bad");
+      const seen=new Set(vocab.map(v=>v.word));
+      let added=0;
+      data.vocab.forEach(v=>{ if(v&&v.word&&!seen.has(v.word)){vocab.push(v);seen.add(v.word);added++;} });
+      const mkey=m=>(m.title||"")+""+(m.body||"");
+      const mseen=new Set(memos.map(mkey));
+      let madded=0;
+      (data.memos||[]).forEach(m=>{ if(m&&!mseen.has(mkey(m))){memos.push(m);mseen.add(mkey(m));madded++;} });
+      save(LS_VOCAB,vocab); save(LS_MEMO,memos);
+      refreshBook(); refreshMemo();
+      alert(`復元しました。単語 ${added} 件・豆知識 ${madded} 件を追加（合計 単語${vocab.length}／豆知識${memos.length}）。`);
+    }catch(e){ alert("読み込めませんでした。正しいバックアップJSONか確認してください。"); }
+    ev.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- init ---------- */
+updateKeyStatus();
+refreshBook();
+refreshMemo();
+renderLevelPicker();
+renderSourcePicker();
+if(!getKey()) setTimeout(openKey,400);
+</script>

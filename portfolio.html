@@ -1,0 +1,290 @@
+<title>語彙ラボ — 技術説明・設計思想</title>
+<style>
+  :root{
+    --paper:#F7F4EC; --card:#FFFFFF; --ink:#25211B; --sub:#6C6456;
+    --line:#E4DECF; --accent:#B0542E; --accent-soft:#F0E3D6;
+    --grow:#3F6B4C; --grow-soft:#E7EFE8;
+    --mincho:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",Georgia,serif;
+    --gothic:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,"Segoe UI",sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --shadow:0 1px 2px rgba(60,45,30,.05),0 10px 30px rgba(60,45,30,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#17140F; --card:#201C16; --ink:#ECE6DA; --sub:#9C9384;
+      --line:#332C22; --accent:#D2854F; --accent-soft:#2C2118;
+      --grow:#82B591; --grow-soft:#1C2620;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#17140F; --card:#201C16; --ink:#ECE6DA; --sub:#9C9384;
+    --line:#332C22; --accent:#D2854F; --accent-soft:#2C2118;
+    --grow:#82B591; --grow-soft:#1C2620;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --paper:#F7F4EC; --card:#FFFFFF; --ink:#25211B; --sub:#6C6456;
+    --line:#E4DECF; --accent:#B0542E; --accent-soft:#F0E3D6;
+    --grow:#3F6B4C; --grow-soft:#E7EFE8;
+    --shadow:0 1px 2px rgba(60,45,30,.05),0 10px 30px rgba(60,45,30,.06);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--gothic);
+    line-height:1.85;-webkit-font-smoothing:antialiased;font-feature-settings:"palt" 1}
+  .wrap{max-width:760px;margin:0 auto;padding:56px 22px 100px}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 14px}
+  h1{font-family:var(--mincho);font-weight:600;font-size:clamp(34px,7vw,52px);line-height:1.15;
+    letter-spacing:.01em;margin:0 0 14px;text-wrap:balance}
+  .lede{font-family:var(--mincho);font-size:clamp(17px,2.6vw,21px);color:var(--ink);
+    line-height:1.7;margin:0 0 26px;text-wrap:balance}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin:0 0 8px}
+  .meta span{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--sub);
+    border:1px solid var(--line);border-radius:20px;padding:5px 12px;white-space:nowrap}
+  .growline{margin:34px 0 4px}
+
+  section{margin-top:56px}
+  h2{font-family:var(--mincho);font-weight:600;font-size:clamp(22px,4vw,28px);
+    margin:0 0 6px;letter-spacing:.01em}
+  .sec-label{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--sub);margin:0 0 18px}
+  h2 + .sec-label{margin-top:-2px}
+  p{margin:0 0 16px;max-width:64ch}
+  strong{color:var(--accent);font-weight:600}
+  .word{font-family:var(--mincho);font-weight:600}
+
+  .rule{height:1px;background:var(--line);border:0;margin:0}
+
+  /* 設計判断カード */
+  .decision{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:4px;padding:22px 24px;margin:16px 0;box-shadow:var(--shadow)}
+  .decision h3{font-family:var(--mincho);font-size:19px;font-weight:600;margin:2px 0 16px;letter-spacing:.01em}
+  dl{margin:0;display:grid;gap:12px}
+  dl > div{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:baseline}
+  dt{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--accent);
+    text-transform:uppercase;padding-top:2px}
+  dd{margin:0;color:var(--ink)}
+  dd.q{color:var(--sub)}
+
+  /* 機能マップ */
+  .fmap{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:620px){.fmap{grid-template-columns:1fr 1fr}}
+  .fgroup{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .fgroup .g{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--sub);margin:0 0 10px}
+  .tags{display:flex;flex-wrap:wrap;gap:7px}
+  .tag{font-size:13px;background:var(--accent-soft);color:var(--ink);border-radius:20px;padding:5px 12px;line-height:1.4}
+
+  /* スタック */
+  .stack{display:grid;gap:2px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .stack .row{display:grid;grid-template-columns:130px 1fr;gap:0;background:var(--card)}
+  .stack .k{font-family:var(--mono);font-size:12px;color:var(--accent);padding:12px 16px;letter-spacing:.03em}
+  .stack .v{padding:12px 16px;color:var(--ink);font-size:14.5px;border-left:1px solid var(--line)}
+  @media(max-width:520px){.stack .row{grid-template-columns:1fr}.stack .v{border-left:0;padding-top:0}}
+
+  /* 制約 */
+  .limit{background:var(--grow-soft);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+  .limit .g{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grow);margin:0 0 10px}
+  .limit ul{margin:0;padding-left:18px}
+  .limit li{margin:0 0 9px;color:var(--ink)}
+  .limit li:last-child{margin-bottom:0}
+  .limit b{color:var(--grow);font-weight:600}
+
+  .axis{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:26px 24px;box-shadow:var(--shadow)}
+  .axis .quote{font-family:var(--mincho);font-size:20px;line-height:1.7;margin:0 0 12px;color:var(--ink);text-wrap:balance}
+
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:11.5px;color:var(--sub);letter-spacing:.04em}
+
+  @media (prefers-reduced-motion: no-preference){
+    .fade{opacity:0;transform:translateY(10px);animation:rise .7s ease forwards}
+    @keyframes rise{to{opacity:1;transform:none}}
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="fade">
+    <p class="eyebrow">Case Study — Web App / LLM</p>
+    <h1><span class="word">語彙ラボ</span></h1>
+    <p class="lede">日本語の語彙力を「暇つぶし」で育てる学習ツール。<br>
+      調べた語が自分の語彙帳に貯まり、忘却曲線に沿って復習が回りだす。</p>
+    <div class="meta">
+      <span>制作 / 個人</span>
+      <span>形態 / 単一HTML・ノーサーバー</span>
+      <span>LLM / Google Gemini（無料枠）</span>
+      <span>保存 / localStorage</span>
+      <span>2026</span>
+    </div>
+
+    <svg class="growline" viewBox="0 0 720 90" preserveAspectRatio="none" width="100%" height="72" aria-hidden="true">
+      <polygon points="0,90 0,72 120,66 240,58 360,44 480,40 600,22 720,10 720,90"
+        style="fill:var(--grow);opacity:.14"></polygon>
+      <polyline points="0,72 120,66 240,58 360,44 480,40 600,22 720,10"
+        style="fill:none;stroke:var(--grow);stroke-width:2;vector-effect:non-scaling-stroke"></polyline>
+      <polyline points="0,80 120,79 240,74 360,70 480,63 600,55 720,42"
+        style="fill:none;stroke:var(--accent);stroke-width:1.5;opacity:.5;vector-effect:non-scaling-stroke"></polyline>
+    </svg>
+  </header>
+
+  <section class="fade">
+    <h2>これは何か</h2>
+    <p class="sec-label">Overview</p>
+    <p>知らない語を調べると、意味・類義語・対義語・例文・使われる場面までを言語モデルが生成し、
+      そのまま自分の<span class="word">語彙帳</span>に蓄積される。貯めた語は
+      <strong>4段階の認知度</strong>で管理され、<strong>クイズ</strong>と<strong>忘却曲線</strong>で復習が回る。
+      「調べる → 貯める → 忘れる前に出会い直す」を一つのアプリで完結させた。</p>
+    <p>青空文庫リーダーやレシピ集約アプリで培った「テキストを貼る → 必要な情報を抽出する」手法を、
+      語彙学習に転用したもの。単発の便利ツールではなく、<strong>使うほど自分専用になる</strong>設計を狙った。</p>
+  </section>
+
+  <section class="fade">
+    <h2>設計思想</h2>
+    <p class="sec-label">Design Philosophy</p>
+
+    <p><strong>「便利」を正面から避けた。</strong>
+      意味を返すだけのツールは ChatGPT に聞けば済み、分かりやすい便利機能は誰かに先を越される。
+      そこで「対話型AIでは代替できないこと」——<em>自分のデータが貯まり続ける・状態を覚えている・忘れた頃に出会い直させる</em>
+      ——だけに機能を寄せた。価値の源泉を「賢さ」ではなく「あなた専用に育つこと」に置いている。</p>
+
+    <p><strong>学習を"体験"として設計した。</strong>
+      語彙は覚えて終わりではなく忘れるもの。だから知識量ではなく<span class="word">継続</span>を設計対象にした。
+      認知度タグ・忘却曲線・連続学習日数・成長グラフは、どれも「今日また開く理由」を作るための仕掛けとして一貫している。</p>
+
+    <p><strong>制約を割り切りではなく設計に変えた。</strong>
+      お金をかけない・サーバーを持たない・個人で使う——この3制約を前提に、
+      鍵は各自が持ち込み（BYOK）、データは端末に置き、通信は無料枠のみ、という構成に落とした。
+      制約から出発したことで、逆に「配っても自分の負担がゼロ」という強みが生まれた。</p>
+  </section>
+
+  <section class="fade">
+    <h2>技術構成</h2>
+    <p class="sec-label">Architecture</p>
+    <div class="stack">
+      <div class="row"><div class="k">配信形態</div><div class="v">単一HTMLファイル。ビルド工程・フレームワーク・依存パッケージなし。ダブルクリックでも静的ホスティングでも動く。</div></div>
+      <div class="row"><div class="k">永続化</div><div class="v">localStorage に全データ（語彙・豆知識・認知度・学習履歴・設定・結果キャッシュ）。JSON書き出し／読み込みでバックアップと端末間移行。</div></div>
+      <div class="row"><div class="k">AI 呼び出し</div><div class="v">ブラウザから Gemini API を直接叩く。APIキーはユーザーが自分のものを入力（BYOK）。構造化出力（responseSchema）で JSON を安定生成。</div></div>
+      <div class="row"><div class="k">グラフ描画</div><div class="v">外部ライブラリを使わず SVG を手組み。オフライン動作・CSP制約下でも安全。</div></div>
+    </div>
+  </section>
+
+  <section class="fade">
+    <h2>主要な技術的判断</h2>
+    <p class="sec-label">Key Decisions — 課題 / 判断 / 理由</p>
+
+    <div class="decision">
+      <h3>LLM プロバイダの選定</h3>
+      <dl>
+        <div><dt>課題</dt><dd class="q">高品質な生成を使いたいが、継続利用が前提で、無料かつアカウントが消えない土台が要る。</dd></div>
+        <div><dt>判断</dt><dd>当初の候補（Claude）は無料枠がなく、手持ちのアカウントも一時的だったため断念。<strong>Gemini の無料枠</strong>に切り替え、自分のGoogleアカウントで永続運用する構成にした。</dd></div>
+        <div><dt>理由</dt><dd>「無料・永続・各自の鍵」を満たすのはこれだけ。品質より先に、続けられる土台を優先した。</dd></div>
+      </dl>
+    </div>
+
+    <div class="decision">
+      <h3>無料枠の枯渇に耐える設計</h3>
+      <dl>
+        <div><dt>課題</dt><dd class="q">無料枠は分・日単位の上限があり、少し使うとすぐ止まる。止まると学習が途切れる。</dd></div>
+        <div><dt>判断</dt><dd><strong>3つの多層対策</strong>——①上限(429)で<strong>自動的に別モデルへ巡回</strong>（無料枠はモデルごとに別なので実質約3倍）②混雑(503)は待って自動リトライ③一度調べた語は<strong>キャッシュ</strong>して再取得しない。</dd></div>
+        <div><dt>理由</dt><dd>ユーザーに設定を触らせず、失敗を"見えないところで吸収"する。継続を止めない仕組みそのものが機能になる。</dd></div>
+      </dl>
+    </div>
+
+    <div class="decision">
+      <h3>忘却曲線ベースの出題</h3>
+      <dl>
+        <div><dt>課題</dt><dd class="q">ランダム出題では、覚えた語も知らない語も同じ頻度で出て非効率。</dd></div>
+        <div><dt>判断</dt><dd>各語に復習間隔（1・3・7・16・35・70日）を持たせ、正解で先送り／不正解でリセットする軽量な間隔反復を実装。出題は<strong>復習期限が来た語 ＞ まだ覚えていない語 ＞ 全体</strong>の順で選ぶ。</dd></div>
+        <div><dt>理由</dt><dd>「忘れかけたタイミングで出会い直す」を自動化。少ない問題数で定着率を上げる。</dd></div>
+      </dl>
+    </div>
+
+    <div class="decision">
+      <h3>認知度と成長の可視化</h3>
+      <dl>
+        <div><dt>課題</dt><dd class="q">"知ってる"と"覚えた"は違う。前者は自己申告、後者は学習の成果。混ぜると成長が見えない。</dd></div>
+        <div><dt>判断</dt><dd>認知度を<strong>知らない／あやふや／知ってる／覚えた！</strong>の4段階に分離。登録時に選べるのは前3つで、<span class="word">覚えた！</span>は<strong>クイズで正解して初めて到達</strong>する状態にした。到達時刻を記録し、覚えた数の推移をグラフ化。</dd></div>
+        <div><dt>理由</dt><dd>「学習して初めて上がる」段階を作ることで、右肩上がりの線が努力の証明になる。</dd></div>
+      </dl>
+    </div>
+
+    <div class="decision">
+      <h3>非破壊な段階的開発</h3>
+      <dl>
+        <div><dt>課題</dt><dd class="q">実際に使う中で要望が次々出る。触るたびに動いている機能を壊すリスクがある。</dd></div>
+        <div><dt>判断</dt><dd>新機能は原則<strong>追加のみ</strong>（既存の関数・データ構造・画面に手を入れない）。新フィールドは既定値で吸収し、古い保存データや旧キャッシュを壊さない後方互換を徹底した。</dd></div>
+        <div><dt>理由</dt><dd>個人開発でもテストの代わりに"壊さない構造"で守る。実利用しながら育てるための前提。</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="fade">
+    <h2>機能マップ</h2>
+    <p class="sec-label">Features</p>
+    <div class="fmap">
+      <div class="fgroup"><p class="g">調べる・貯める</p><div class="tags">
+        <span class="tag">語の生成（意味・類義・対義・例文・場面）</span>
+        <span class="tag">おまかせ出題</span>
+        <span class="tag">難易度レベル</span>
+        <span class="tag">ジャンル指定（四字熟語・故事成語 等）</span>
+        <span class="tag">文章から難語抽出</span>
+        <span class="tag">リスト一括登録</span>
+      </div></div>
+      <div class="fgroup"><p class="g">覚える・続ける</p><div class="tags">
+        <span class="tag">4段階 認知度タグ</span>
+        <span class="tag">クイズ（4択）</span>
+        <span class="tag">今日の10問＋結果画面</span>
+        <span class="tag">忘却曲線 復習</span>
+        <span class="tag">間違えた語だけ復習</span>
+        <span class="tag">連続学習日数</span>
+      </div></div>
+      <div class="fgroup"><p class="g">見える・管理する</p><div class="tags">
+        <span class="tag">成長グラフ</span>
+        <span class="tag">今週の増加数</span>
+        <span class="tag">ジャンル別グループ表示</span>
+        <span class="tag">編集・削除</span>
+        <span class="tag">豆知識（雑学の別枠保存）</span>
+      </div></div>
+      <div class="fgroup"><p class="g">土台</p><div class="tags">
+        <span class="tag">モデル自動切替</span>
+        <span class="tag">結果キャッシュ</span>
+        <span class="tag">JSONバックアップ／復元</span>
+        <span class="tag">モバイル最適化</span>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="fade">
+    <h2>制約と割り切り</h2>
+    <p class="sec-label">Honest Limitations</p>
+    <div class="limit">
+      <p class="g">承知の上で選んだトレードオフ</p>
+      <ul>
+        <li><b>毎日のプッシュ通知は載せていない。</b> ブラウザWebはアプリを閉じている間に通知を送れない（特にiOS）。確実にやるならネイティブ化が必要——ここは「開いたら連続日数が見える」設計で継続動機を代替した。</li>
+        <li><b>APIキーは端末内に保存＝個人利用が前提。</b> 不特定多数への公開にはプロキシ（サーバー）が要る。一方、ファイルを渡す形なら各自が自分の鍵を入れるので、無料のまま安全に配れる。</li>
+        <li><b>無料枠の上限は残る。</b> 多層対策で緩和はしたが、根本解決には少額課金が要る。個人の学習用途では無料の範囲で成立する、という判断。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="fade">
+    <h2>この作品の位置づけ</h2>
+    <p class="sec-label">Portfolio Axis</p>
+    <div class="axis">
+      <p class="quote">わたしの制作物に共通する軸は、<br>「学習と創作の<span class="word">体験</span>を設計すること」。</p>
+      <p>青空文庫を読みやすくするリーダー、レシピを集約して費用と時間を見せるツール、
+        猫視点でストリートビューを歩く体験、傾けて絵が変わるレンチキュラー——
+        テーマは違っても、狙いはいつも「そのままでは続かない・触りにくいものを、続けたくなる体験に変える」こと。
+        <strong>語彙ラボ</strong>は、その軸を"毎日ひらく学習ツール"という形で最も素直に体現した一つ。</p>
+    </div>
+  </section>
+
+  <footer>
+    語彙ラボ — 技術説明・設計思想 / 個人制作 / 単一HTML + Gemini API + localStorage
+  </footer>
+
+</div>
