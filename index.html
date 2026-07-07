@@ -131,6 +131,13 @@
   .chart{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
   .chart-head{font-size:13px;color:var(--sub);margin-bottom:6px}
   .chart-head b{color:var(--syn)}
+  .help-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    border-radius:50%;border:1px solid var(--line);color:var(--sub);font-weight:700;cursor:pointer;
+    font-size:14px;background:var(--paper);flex-shrink:0;margin-left:6px}
+  .help-btn:hover{color:var(--accent);border-color:var(--accent)}
+  ol.tut{margin:6px 0 4px;padding-left:22px;display:grid;gap:9px}
+  ol.tut li{line-height:1.7}
+  ol.tut b{color:var(--accent)}
 
   /* quiz */
   .quiz-q{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;
@@ -180,7 +187,25 @@
     <h1>語彙ラボ</h1>
     <span class="tag">日本語の語彙力を、暇つぶしで育てる</span>
     <span class="key-status" id="keyStatus" onclick="openKey()">APIキー未設定</span>
+    <span class="help-btn" onclick="openTut()" title="使い方">？</span>
   </header>
+
+  <!-- チュートリアル -->
+  <div class="modal" id="tutModal">
+    <div class="box">
+      <h2>ようこそ、語彙ラボへ 📖</h2>
+      <p style="margin-top:0">日本語の語彙を「暇つぶし」で増やすツールです。使い方はかんたん：</p>
+      <ol class="tut">
+        <li><b>おまかせ</b>で難しめの語を10個出し、知らない語を語彙帳へ登録（レベル・ジャンルも選べます）。</li>
+        <li><b>調べる</b>で気になった語を検索。意味・類義語・対義語・例文・使われる場面まで出ます。</li>
+        <li>語には<b>認知度</b>（知らない／あやふや／知ってる／覚えた！）を付けて管理。</li>
+        <li><b>クイズ</b>や<b>今日の10問</b>で復習。正解すると「覚えた！」に昇格し、<b>忘却曲線</b>で最適な間隔でまた出題されます。</li>
+        <li><b>語彙帳</b>で成長グラフ・🔥連続日数・ジャンル別に、伸びを確認。</li>
+      </ol>
+      <p class="hint" style="margin-bottom:0">右上の「APIキー」からGeminiの無料キーを入れると全機能が使えます。お試し用のサンプル語を数個入れてあります。ヘッダーの <b>？</b> でいつでもこの説明を開けます。</p>
+      <div class="row" style="margin-top:16px"><button class="btn" onclick="closeTut()">始める</button></div>
+    </div>
+  </div>
 
   <nav class="tabs" id="tabs">
     <button class="active" data-t="look">調べる</button>
@@ -315,7 +340,7 @@
 
 <script>
 "use strict";
-const LS_KEY="goilab_apikey", LS_VOCAB="goilab_vocab", LS_MEMO="goilab_memo", LS_MODEL="goilab_model", LS_CACHE="goilab_cache", LS_LEVEL="goilab_level", LS_STREAK="goilab_streak", LS_SOURCE="goilab_source";
+const LS_KEY="goilab_apikey", LS_VOCAB="goilab_vocab", LS_MEMO="goilab_memo", LS_MODEL="goilab_model", LS_CACHE="goilab_cache", LS_LEVEL="goilab_level", LS_STREAK="goilab_streak", LS_SOURCE="goilab_source", LS_SEEDED="goilab_seeded", LS_TUTORIAL="goilab_tutorial";
 let MODEL=localStorage.getItem("goilab_model")||"gemini-2.5-flash-lite";  // 設定モーダルで変更可
 let vocab = load(LS_VOCAB, []);
 let memos = load(LS_MEMO, []);   // {title,body,ts}
@@ -1028,11 +1053,63 @@ function importData(ev){
   reader.readAsText(file);
 }
 
+/* ---------- サンプル語（初回だけ投入） ---------- */
+const SEED=[
+  {word:"邂逅",reading:"かいこう",meaning:"思いがけなく偶然に出会うこと。",
+   synonyms:[{word:"遭遇",nuance:"不意に出くわす"},{word:"巡り合い",nuance:"運命的な出会い"}],
+   antonyms:[{word:"別離",nuance:"別れること"}],
+   example:"旅先での邂逅が、その後の人生を変えた。",level:"難",category:"文学",
+   usage:"小説や随筆で、運命的・詩的な出会いを表すときに使う。改まった文章向き。",fam:1,dts:6},
+  {word:"慧眼",reading:"けいがん",meaning:"物事の本質を鋭く見抜く力。",
+   synonyms:[{word:"洞察力",nuance:"深く見通す"},{word:"眼力",nuance:"見抜く力"}],
+   antonyms:[{word:"節穴",nuance:"見抜けない目"}],
+   example:"彼の慧眼は、無名の新人の才能を早くから見抜いていた。",level:"難",category:"評価",
+   usage:"人の判断力・見識をほめるときに。評論やビジネスでも使う。",fam:2,dts:5},
+  {word:"忖度",reading:"そんたく",meaning:"他人の心中や意向をおしはかること。",
+   synonyms:[{word:"推察",nuance:"おしはかる"},{word:"斟酌",nuance:"事情をくむ"}],
+   antonyms:[{word:"無視",nuance:"考慮しない"}],
+   example:"上司の意向を忖度して、誰も反対しなかった。",level:"やや難",category:"社会",
+   usage:"近年は「上に気を遣って先回りする」ニュアンスで批判的に使われることも。",fam:1,dts:4},
+  {word:"刹那",reading:"せつな",meaning:"きわめて短い時間。一瞬。",
+   synonyms:[{word:"瞬間",nuance:"ごく短い間"},{word:"束の間",nuance:"わずかな時間"}],
+   antonyms:[{word:"永遠",nuance:"果てしない時間"}],
+   example:"花火が消える刹那の美しさに息をのんだ。",level:"やや難",category:"仏教語",
+   usage:"詩・歌詞・随筆で、はかなさや一瞬の美を表すときに。",fam:3,dts:4,mdts:1},
+  {word:"泰然",reading:"たいぜん",meaning:"落ち着いていて、物事に少しも動じないさま。",
+   synonyms:[{word:"沈着",nuance:"冷静"},{word:"悠然",nuance:"ゆったり構える"}],
+   antonyms:[{word:"狼狽",nuance:"あわてる"},{word:"動揺",nuance:"心が乱れる"}],
+   example:"非常時にも泰然と指示を出す姿に、皆が安心した。",level:"やや難",category:"態度",
+   usage:"「泰然自若」の形でもよく使う。人の落ち着きをほめる。",fam:2,dts:2},
+  {word:"一期一会",reading:"いちごいちえ",meaning:"一生に一度きりの出会い。その機会を大切にせよという教え。",
+   synonyms:[{word:"千載一遇",nuance:"めったにない好機"}],
+   antonyms:[],
+   example:"一期一会の心で、今日の出会いを大切にしたい。",level:"難",category:"故事・四字熟語",
+   usage:"茶道由来。出会いや機会の一度きりの尊さを説くときに。",fam:3,dts:6,mdts:2},
+];
+function seedIfEmpty(){
+  if(localStorage.getItem(LS_SEEDED)) return;   // 一度だけ
+  localStorage.setItem(LS_SEEDED,"1");
+  if(vocab.length) return;                       // 既にデータがあれば入れない
+  const now=Date.now();
+  SEED.forEach(s=>{
+    const w=Object.assign({},s); delete w.dts; delete w.mdts;
+    w.ts=now-(s.dts||0)*864e5; w.due=now; w.streak=0;
+    if(s.fam===3) w.masteredAt=now-((s.mdts!=null?s.mdts:0))*864e5;
+    vocab.push(w);
+  });
+  save(LS_VOCAB,vocab);
+}
+/* ---------- チュートリアル ---------- */
+function openTut(){document.getElementById("tutModal").classList.add("open");}
+function closeTut(){document.getElementById("tutModal").classList.remove("open");localStorage.setItem(LS_TUTORIAL,"1");if(!getKey())openKey();}
+
 /* ---------- init ---------- */
 updateKeyStatus();
+seedIfEmpty();
 refreshBook();
 refreshMemo();
 renderLevelPicker();
 renderSourcePicker();
-if(!getKey()) setTimeout(openKey,400);
+if(!localStorage.getItem(LS_TUTORIAL)) openTut();
+else if(!getKey()) setTimeout(openKey,400);
 </script>
