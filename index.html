@@ -138,6 +138,25 @@
   ol.tut{margin:6px 0 4px;padding-left:22px;display:grid;gap:9px}
   ol.tut li{line-height:1.7}
   ol.tut b{color:var(--accent)}
+  /* ゲーム要素 */
+  .game{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .lvrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .lvrow .lv{font-weight:700;font-family:"Hiragino Mincho ProN",serif;font-size:18px;color:var(--accent)}
+  .rank{font-size:12px;font-weight:700;border-radius:8px;padding:2px 10px;border:1px solid var(--line)}
+  .rank-D{color:var(--sub)} .rank-C{color:var(--info);border-color:var(--info)}
+  .rank-B{color:var(--syn);border-color:var(--syn)} .rank-A{color:var(--gold);border-color:var(--gold)}
+  .rank-S{color:#fff;background:var(--accent);border-color:var(--accent)}
+  .xpbar{flex:1;min-width:90px;height:8px;background:var(--line);border-radius:20px;overflow:hidden}
+  .xpfill{height:100%;background:var(--accent);border-radius:20px;transition:width .4s}
+  .xptxt{font-size:11px;color:var(--sub);white-space:nowrap}
+  .achv{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .badge{font-size:11.5px;background:var(--accent-soft);color:var(--accent);border-radius:20px;padding:3px 10px;white-space:nowrap}
+  .badge.more{background:transparent;color:var(--sub);border:1px solid var(--line)}
+  .combo{text-align:center;color:var(--gold);font-weight:700;font-size:14px;margin-bottom:10px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);
+    padding:11px 20px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:var(--shadow);z-index:100;
+    opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
 
   /* quiz */
   .quiz-q{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;
@@ -242,6 +261,7 @@
 
   <!-- 語彙帳 -->
   <section class="panel" id="p-book">
+    <div id="bookGame"></div>
     <div class="stat" id="bookStat"></div>
     <div id="bookChart" style="margin:14px 0 4px"></div>
     <div id="bookList"></div>
@@ -343,10 +363,11 @@
 
 <script>
 "use strict";
-const LS_KEY="goilab_apikey", LS_VOCAB="goilab_vocab", LS_MEMO="goilab_memo", LS_MODEL="goilab_model", LS_CACHE="goilab_cache", LS_LEVEL="goilab_level", LS_STREAK="goilab_streak", LS_SOURCE="goilab_source", LS_SEEDED="goilab_seeded", LS_TUTORIAL="goilab_tutorial";
+const LS_KEY="goilab_apikey", LS_VOCAB="goilab_vocab", LS_MEMO="goilab_memo", LS_MODEL="goilab_model", LS_CACHE="goilab_cache", LS_LEVEL="goilab_level", LS_STREAK="goilab_streak", LS_SOURCE="goilab_source", LS_SEEDED="goilab_seeded", LS_TUTORIAL="goilab_tutorial", LS_XP="goilab_xp", LS_ACHV="goilab_achv";
 let MODEL=localStorage.getItem("goilab_model")||"gemini-2.5-flash-lite";  // 設定モーダルで変更可
 let vocab = load(LS_VOCAB, []);
 let memos = load(LS_MEMO, []);   // {title,body,ts}
+let xp=load(LS_XP,0), achv=load(LS_ACHV,[]), combo=0;   // ゲーム要素（EXP・実績・連続正解）
 let shownWord=null;              // 現在カード表示中の語（認知度ボタン用）
 let cardHost=null;               // カードを描画している要素（更新の再描画先）
 
@@ -639,6 +660,7 @@ function refreshBook(){
     +`<div><span class="famdot f1"></span> あやふや <b>${cc[1]}</b></div>`
     +`<div><span class="famdot f0"></span> 知らない <b>${cc[0]}</b></div>`;
   const _ch=document.getElementById("bookChart"); if(_ch) _ch.innerHTML=buildChart();
+  const _g=document.getElementById("bookGame"); if(_g) _g.innerHTML=buildGame();
   if(!vocab.length){list.innerHTML=`<div class="empty">まだ語がありません。<br>「調べる」「おまかせ」「まとめて」で語を貯めましょう。</div>`;return;}
   const famChips=`<div class="chips famfilter">`
     +`<span class="chip cat ${famFilter<0?"on":""}" onclick="setFam(-1)">すべて</span>`
@@ -664,6 +686,53 @@ function refreshBook(){
 }
 function setFilter(i){bookFilter=i<0?"__all":curCats[i];refreshBook();}
 function delWord(i){vocab.splice(i,1);save(LS_VOCAB,vocab);refreshBook();}
+
+/* ---------- レベル・EXP・コンボ・ランク・実績 ---------- */
+function levelInfo(x){let lv=1,need=50,acc=0;while(x>=acc+need&&lv<999){acc+=need;lv++;need=Math.round(need*1.25);}return{lv,cur:x-acc,need};}
+function rankOf(lv){return lv>=35?"S":lv>=20?"A":lv>=10?"B":lv>=5?"C":"D";}
+function comboMult(){return combo>=10?2:combo>=5?1.5:1;}
+function addXP(n){xp=Math.round(xp+n);save(LS_XP,xp);}
+const ACHV=[
+  {id:"first",t:"初正解",d:"クイズで初めて正解",f:s=>s.xp>0},
+  {id:"m10",t:"10語習得",d:"「覚えた！」を10語",f:s=>s.mastered>=10},
+  {id:"m50",t:"50語習得",d:"「覚えた！」を50語",f:s=>s.mastered>=50},
+  {id:"m100",t:"100語習得",d:"「覚えた！」を100語",f:s=>s.mastered>=100},
+  {id:"v50",t:"コレクター",d:"語彙帳に50語",f:s=>s.total>=50},
+  {id:"yoji",t:"四字熟語マスター",d:"四字熟語を10語習得",f:s=>s.yoji>=10},
+  {id:"s7",t:"一週間継続",d:"7日連続で学習",f:s=>s.streak>=7},
+  {id:"s30",t:"一ヶ月継続",d:"30日連続で学習",f:s=>s.streak>=30},
+  {id:"lv10",t:"Lv.10到達",d:"レベル10に到達",f:s=>s.lv>=10},
+  {id:"c10",t:"10連続正解",d:"クイズで10問連続正解",f:s=>s.combo>=10},
+];
+function achvStats(){
+  const mastered=vocab.filter(v=>v.fam===3).length;
+  const yoji=vocab.filter(v=>v.fam===3&&/四字/.test(v.category||"")).length;
+  return {xp,mastered,total:vocab.length,streak:getStreak(),lv:levelInfo(xp).lv,combo,yoji};
+}
+function checkAchievements(silent){
+  const s=achvStats(); let changed=false;
+  ACHV.forEach(a=>{ if(!achv.includes(a.id)&&a.f(s)){ achv.push(a.id); changed=true; if(!silent) toast("🏆 "+a.t+" 達成！"); } });
+  if(changed){ save(LS_ACHV,achv); const g=document.getElementById("bookGame"); if(g) g.innerHTML=buildGame(); }
+}
+function toast(msg){
+  const t=document.createElement("div"); t.className="toast"; t.textContent=msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),300);},2600);
+}
+function buildGame(){
+  const li=levelInfo(xp), rank=rankOf(li.lv), pct=Math.round(li.cur/li.need*100);
+  const earned=ACHV.filter(a=>achv.includes(a.id));
+  return `<div class="game">
+    <div class="lvrow">
+      <span class="lv">Lv.${li.lv}</span>
+      <span class="rank rank-${rank}">${rank}ランク</span>
+      <div class="xpbar"><div class="xpfill" style="width:${pct}%"></div></div>
+      <span class="xptxt">次まで ${li.need-li.cur}</span>
+    </div>
+    ${earned.length?`<div class="achv">${earned.map(a=>`<span class="badge" title="${esc(a.d)}">🏆 ${esc(a.t)}</span>`).join("")}<span class="badge more">${earned.length} / ${ACHV.length}</span></div>`:""}
+  </div>`;
+}
 
 /* ---------- クイズ ---------- */
 /* ---------- 連続学習（ストリーク） ---------- */
@@ -695,10 +764,12 @@ function pickAnswer(){
   const pool=weak.length?weak:vocab;
   return pool[Math.floor(Math.random()*pool.length)];
 }
-let quizState=null, quizMissOnly=false, session=null;
-function toggleMissOnly(){ session=null; quizMissOnly=!quizMissOnly; startQuiz(); }
+let quizState=null, quizMissOnly=false, session=null, quizType="meaning";
+function toggleMissOnly(){ session=null; combo=0; quizMissOnly=!quizMissOnly; startQuiz(); }
+function toggleQuizType(){ session=null; combo=0; quizType=(quizType==="cloze"?"meaning":"cloze"); startQuiz(); }
 function startDaily(){
   if(vocab.length<4) return startQuiz();
+  combo=0;
   const now=Date.now();
   let pool=vocab.filter(v=>(v.fam||0)<3 && (v.due||0)<=now);   // 期限切れ優先
   const push=arr=>{ for(const v of arr){ if(pool.length>=10)break; if(!pool.includes(v))pool.push(v); } };
@@ -739,16 +810,23 @@ function startQuiz(){
   shuffle(opts);
 
   const missCount=vocab.filter(v=>v.miss).length;
+  const useCloze = quizType==="cloze" && answer.example && answer.example.includes(answer.word);
+  const qtext = useCloze
+    ? `${esc(answer.example.split(answer.word).join("＿＿＿"))}<br><span style="color:var(--sub);font-size:13px">空欄に入る語は？</span>`
+    : `「${esc(answer.meaning)}」<br><span style="color:var(--sub);font-size:13px">に当てはまる語は？</span>`;
+  const comboHtml = combo>=2 ? `<div class="combo">🔥 ${combo}問連続${comboMult()>1?` ×${comboMult()}`:""}</div>` : "";
   const bar = session
     ? `<div class="score">今日の10問　${session.i+1} / ${session.words.length}（正解 ${session.correct}）</div>`
     : `<div class="score">正解 ${quizState.correct} / ${quizState.total}
         <button class="btn" style="padding:4px 11px;font-size:12px;margin-left:8px" onclick="startDaily()">今日の10問</button>
         <button class="btn ghost" style="padding:4px 11px;font-size:12px" onclick="toggleMissOnly()">${quizMissOnly?'✓ 間違えた語だけ':'間違えた語だけ ('+missCount+')'}</button>
+        <button class="btn ghost" style="padding:4px 11px;font-size:12px" onclick="toggleQuizType()">${quizType==="cloze"?'✓ 穴埋め':'穴埋めモード'}</button>
       </div>`;
   area.innerHTML=`
     ${bar}
+    ${comboHtml}
     <div class="quiz-q">
-      <div class="qm">「${esc(answer.meaning)}」<br><span style="color:var(--sub);font-size:13px">に当てはまる語は？</span></div>
+      <div class="qm">${qtext}</div>
       <div class="quiz-opts" id="qopts">
         ${opts.map(o=>`<button onclick='answerQuiz(this,"${esc(o.word)}","${esc(answer.word)}")'>${esc(o.word)}</button>`).join("")}
       </div>
@@ -759,13 +837,16 @@ function answerQuiz(btn,chosen,correct){
   buttons.forEach(b=>b.disabled=true);
   const v=vocab.find(x=>x.word===correct);
   const ok=chosen===correct;
-  if(ok){ btn.classList.add("correct"); }
-  else{
+  if(ok){
+    btn.classList.add("correct");
+    combo++; addXP(Math.round(10*comboMult()));   // 正解でEXP（連続で倍率）
+  }else{
     btn.classList.add("wrong");
     buttons.forEach(b=>{if(b.textContent===correct)b.classList.add("correct");});
+    combo=0;
   }
   if(v){
-    if(ok){ v.fam=3; v.miss=false; if(!v.masteredAt) v.masteredAt=Date.now(); }
+    if(ok){ v.fam=3; v.miss=false; if(!v.masteredAt){ v.masteredAt=Date.now(); addXP(15); } }  // 初到達ボーナス
     else { v.miss=true; if((v.fam||0)>=2) v.fam=1; }
     schedule(v,ok);   // 忘却曲線で次回出題を設定
   }
@@ -775,6 +856,7 @@ function answerQuiz(btn,chosen,correct){
   }else{
     quizState.total++; if(ok) quizState.correct++;
   }
+  checkAchievements();
   markStudied();
   save(LS_VOCAB,vocab);
   setTimeout(startQuiz,900);
@@ -1112,6 +1194,7 @@ refreshBook();
 refreshMemo();
 renderLevelPicker();
 renderSourcePicker();
+checkAchievements(true);   // 既に達成済みのものは静かに記録（初回の一斉トースト回避）
 if(!localStorage.getItem(LS_TUTORIAL)) openTut();
 else if(!getKey()) setTimeout(openKey,400);
 </script>
