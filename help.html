@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#B0542E">
+<title>語彙ラボ — 使い方ガイド</title>
+<style>
+  :root{
+    --paper:#F7F4EC; --card:#FFFFFF; --ink:#25211B; --sub:#6C6456;
+    --line:#E4DECF; --accent:#B0542E; --accent-soft:#F0E3D6;
+    --grow:#3F6B4C; --grow-soft:#E7EFE8;
+    --mincho:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",Georgia,serif;
+    --gothic:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,"Segoe UI",sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --shadow:0 1px 2px rgba(60,45,30,.05),0 10px 30px rgba(60,45,30,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--paper:#17140F;--card:#201C16;--ink:#ECE6DA;--sub:#9C9384;--line:#332C22;
+      --accent:#D2854F;--accent-soft:#2C2118;--grow:#82B591;--grow-soft:#1C2620;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35);}
+  }
+  :root[data-theme="dark"]{--paper:#17140F;--card:#201C16;--ink:#ECE6DA;--sub:#9C9384;--line:#332C22;
+    --accent:#D2854F;--accent-soft:#2C2118;--grow:#82B591;--grow-soft:#1C2620;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35);}
+  :root[data-theme="light"]{--paper:#F7F4EC;--card:#FFFFFF;--ink:#25211B;--sub:#6C6456;--line:#E4DECF;
+    --accent:#B0542E;--accent-soft:#F0E3D6;--grow:#3F6B4C;--grow-soft:#E7EFE8;
+    --shadow:0 1px 2px rgba(60,45,30,.05),0 10px 30px rgba(60,45,30,.06);}
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--gothic);
+    line-height:1.85;-webkit-font-smoothing:antialiased;font-feature-settings:"palt" 1}
+  .wrap{max-width:740px;margin:0 auto;padding:44px 22px 100px}
+  a{color:var(--accent)}
+
+  .back{font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-decoration:none;
+    color:var(--sub);border:1px solid var(--line);border-radius:20px;padding:6px 13px;display:inline-block;margin-bottom:26px}
+  .back:hover{color:var(--accent);border-color:var(--accent)}
+
+  h1{font-family:var(--mincho);font-weight:600;font-size:clamp(30px,6vw,42px);margin:0 0 8px;letter-spacing:.01em}
+  .lede{font-family:var(--mincho);font-size:clamp(16px,2.4vw,19px);color:var(--sub);margin:0 0 30px}
+
+  /* 目次 */
+  nav.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:0 0 44px;box-shadow:var(--shadow)}
+  nav.toc p{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub);margin:0 0 10px}
+  nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:24px}
+  @media(max-width:520px){nav.toc ol{columns:1}}
+  nav.toc li{margin:0 0 6px;break-inside:avoid}
+  nav.toc a{text-decoration:none;border-bottom:1px solid transparent}
+  nav.toc a:hover{border-bottom-color:var(--accent)}
+
+  section{margin-top:52px;scroll-margin-top:20px}
+  h2{font-family:var(--mincho);font-weight:600;font-size:clamp(21px,4vw,26px);margin:0 0 4px;
+    padding-bottom:10px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:12px}
+  h2 .n{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:400}
+  h3{font-family:var(--gothic);font-weight:700;font-size:16px;margin:24px 0 6px;color:var(--ink)}
+  h3 .chip{font-family:var(--gothic);font-size:12px;font-weight:600;background:var(--accent-soft);color:var(--accent);
+    border-radius:6px;padding:2px 9px;margin-right:8px;vertical-align:2px}
+  p{margin:0 0 14px;max-width:64ch}
+  ul,ol.steps{margin:0 0 14px;padding-left:22px;max-width:64ch}
+  li{margin:0 0 7px;line-height:1.75}
+  strong{color:var(--accent);font-weight:600}
+  .k{font-family:var(--gothic);font-weight:600;background:var(--accent-soft);color:var(--ink);
+    border-radius:6px;padding:1px 8px;white-space:nowrap;font-size:.94em}
+
+  .tip{background:var(--grow-soft);border:1px solid var(--line);border-left:3px solid var(--grow);
+    border-radius:4px;padding:13px 16px;margin:14px 0}
+  .tip .g{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--grow);margin:0 0 5px}
+  .tip p:last-child{margin:0}
+
+  /* 認知度 */
+  .fam{display:grid;gap:8px;margin:14px 0}
+  .fam .row{display:grid;grid-template-columns:20px 92px 1fr;gap:12px;align-items:baseline;
+    background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+  .dot{width:12px;height:12px;border-radius:50%;align-self:center}
+  .d0{background:#8a3b3b}.d1{background:#b08432}.d2{background:#4a72a8}.d3{background:#3F6B4C}
+  .fam .lbl{font-weight:700}
+
+  /* FAQ */
+  details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 16px;margin:10px 0}
+  details[open]{padding-bottom:6px}
+  summary{cursor:pointer;padding:14px 0;font-weight:600;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"＋";color:var(--accent);font-weight:700;margin-right:10px}
+  details[open] summary::before{content:"−"}
+  details p{margin:0 0 12px;color:var(--ink)}
+
+  footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:11.5px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="./">← アプリに戻る</a>
+
+  <h1>語彙ラボ 使い方ガイド</h1>
+  <p class="lede">日本語の語彙を「暇つぶし」で増やすツールの、ぜんぶの使い方。</p>
+
+  <nav class="toc">
+    <p>目次</p>
+    <ol>
+      <li><a href="#start">最初の準備（APIキー）</a></li>
+      <li><a href="#collect">語を増やす</a></li>
+      <li><a href="#learn">覚える・復習する</a></li>
+      <li><a href="#manage">見る・管理する</a></li>
+      <li><a href="#fam">認知度の4段階</a></li>
+      <li><a href="#srs">忘却曲線のしくみ</a></li>
+      <li><a href="#data">データとバックアップ</a></li>
+      <li><a href="#mobile">スマホで使う</a></li>
+      <li><a href="#faq">困ったとき（FAQ）</a></li>
+    </ol>
+  </nav>
+
+  <section id="start">
+    <h2><span class="n">01</span>最初の準備（APIキー）</h2>
+    <p>このアプリは Google の <strong>Gemini（無料枠）</strong> を使って語を生成します。使い始めるには、自分の無料キーを一度だけ入れます。<b>お金はかかりません。</b></p>
+    <ol class="steps">
+      <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> を開き、Googleでログイン。</li>
+      <li>「Create API key」を押してキー（<code>AIza…</code>）をコピー。クレジットカードは不要です。</li>
+      <li>アプリ右上の <span class="k">APIキー</span> を押して、貼り付けて保存。</li>
+    </ol>
+    <div class="tip">
+      <p class="g">安全性</p>
+      <p>キーはあなたの端末（ブラウザ）にだけ保存され、外部には送られません（Googleへの通信を除く）。共有PCでは注意してください。他の人にアプリを渡すときも、キーはファイルに入っていないので各自が自分のキーを入れます。</p>
+    </div>
+  </section>
+
+  <section id="collect">
+    <h2><span class="n">02</span>語を増やす</h2>
+
+    <h3><span class="chip">調べる</span>気になった語を検索</h3>
+    <p>語を入力すると、<strong>意味・読み・類義語・対義語・例文・使われる場面</strong>までまとめて表示されます。カードの下のボタンでそのまま語彙帳に登録できます。類義語・対義語はタップすると、その語も調べられます。</p>
+
+    <h3><span class="chip">おまかせ</span>難しめの語を10個おすすめ</h3>
+    <p>ボタンを押すと難しめの語を10個提案します。上の <strong>レベル</strong>（やさしい／ふつう／むずかしい）と <strong>ジャンル</strong>（すべて／四字熟語／故事成語／古語・古文風／慣用句）で、出す語を調整できます。行ごとに認知度を選んで登録、または「別の10語」で入れ替え。</p>
+
+    <h3><span class="chip">文章から抽出</span>文章の難語だけ抜き出す</h3>
+    <p>本やニュースの文章を貼ると、その中の「知らない人が多そうな難語」だけを自動で抜き出します。読書のお供に。</p>
+
+    <h3><span class="chip">まとめて</span>単語リストを一括登録</h3>
+    <p>ChatGPT等で調べた単語のリストを貼り付けると、まとめて解説を補完して一括登録できます。「1行1語」「単語：意味」「番号付き」「カンマ区切り」など、形式はバラバラでも大丈夫。語数の上限はありません。</p>
+
+    <div class="tip">
+      <p class="g">登録のコツ</p>
+      <p>登録するときは <strong>知らない／あやふや／知ってる</strong> の3つから認知度を選べます。「覚えた！」は登録では選べません — <b>クイズで正解して初めて</b>到達する状態だからです。</p>
+    </div>
+  </section>
+
+  <section id="learn">
+    <h2><span class="n">03</span>覚える・復習する</h2>
+
+    <h3><span class="chip">クイズ</span>意味から語を当てる4択</h3>
+    <p>意味を見て、正しい語を4択から選びます。正解すると認知度が <strong>「覚えた！」</strong> に上がり、間違えると復習対象として記録されます。まだ覚えていない語を優先して出題します。</p>
+
+    <h3><span class="chip">今日の10問</span>10問だけのミニ学習</h3>
+    <p>クイズ画面の「今日の10問」を押すと、10問だけのセッションが始まり、最後に <strong>正答率と間違えた語の一覧</strong> が出ます。毎日の習慣づけにちょうどいい分量です。</p>
+
+    <h3><span class="chip">間違えた語だけ</span>苦手を集中復習</h3>
+    <p>「間違えた語だけ」を押すと、過去に間違えた語だけが出題されます。正解すると一覧から外れるので、苦手をつぶしきれます。</p>
+
+    <div class="tip">
+      <p class="g">続けるしくみ</p>
+      <p>クイズや語の登録をした日は <strong>🔥 連続学習日数</strong> が加算されます（1日空くとリセット）。語彙帳を開くと、連続日数と成長グラフが見えます。</p>
+    </div>
+  </section>
+
+  <section id="manage">
+    <h2><span class="n">04</span>見る・管理する</h2>
+
+    <h3><span class="chip">語彙帳</span>貯めた語と成長</h3>
+    <p>登録した語の一覧です。上部に <strong>成長グラフ</strong>（覚えた数の推移）、<strong>今週の増加数</strong>、<strong>🔥連続日数</strong>、認知度ごとの語数が出ます。</p>
+    <ul>
+      <li><strong>ジャンル・認知度で絞り込み</strong>: 上のチップで「四字熟語だけ」「知らない語だけ」などに絞れます。</li>
+      <li><strong>色ドット</strong>: 各語の左の丸は認知度の色。クリックで切り替えできます。</li>
+      <li><strong>編集（✎）・削除（×）</strong>: 語を手直ししたり消したり。編集画面の「豆知識に移す」で、単語ではない雑学を別枠へ移せます。</li>
+    </ul>
+
+    <h3><span class="chip">豆知識</span>雑学を別枠で保存</h3>
+    <p>「蝶と蛾の違い」のような、単語ではない雑学・違い・まとめを保存する場所です。お題と内容を入れて保存、または「Geminiに聞く」で自動生成もできます。</p>
+  </section>
+
+  <section id="fam">
+    <h2><span class="n">05</span>認知度の4段階</h2>
+    <p>各語には「どれくらい身についているか」を4段階で記録します。登録時に選べるのは上の3つ。<strong>覚えた！はクイズで正解して到達</strong>する、いわば努力の結果です。</p>
+    <div class="fam">
+      <div class="row"><span class="dot d0"></span><span class="lbl">知らない</span><span>初めて出会った、まだ意味も曖昧な語。</span></div>
+      <div class="row"><span class="dot d1"></span><span class="lbl">あやふや</span><span>なんとなく分かるが自信がない語。</span></div>
+      <div class="row"><span class="dot d2"></span><span class="lbl">知ってる</span><span>意味は分かる語。既に知っている語を貯めるのにも使えます。</span></div>
+      <div class="row"><span class="dot d3"></span><span class="lbl">覚えた！</span><span>クイズで正解して定着を確認できた語。逆に、覚えていたはずの語を間違えると「あやふや」に戻ります。</span></div>
+    </div>
+  </section>
+
+  <section id="srs">
+    <h2><span class="n">06</span>忘却曲線のしくみ</h2>
+    <p>クイズは「忘れかけたタイミングで出会い直す」ように出題されます。正解を重ねるほど、次にその語が出るまでの間隔が <strong>1日 → 3日 → 7日 → 16日 → 35日…</strong> と伸びていきます。間違えるとリセットされ、すぐまた復習に戻ります。</p>
+    <p>出題の優先順位は <strong>「復習期限が来た語 ＞ まだ覚えていない語 ＞ 全体」</strong>。少ない問題数で効率よく定着させるためのしくみです。</p>
+  </section>
+
+  <section id="data">
+    <h2><span class="n">07</span>データとバックアップ</h2>
+    <p>語彙・豆知識・認知度・学習履歴は、すべて <strong>あなたの端末（ブラウザ）内</strong> に保存されます。サーバーには送られません。</p>
+    <p>ページ最下部の <span class="k">⬇ バックアップ保存</span> で全データをJSONファイルに書き出せます。<span class="k">⬆ 復元</span> でそれを読み込めば元通り。<strong>別のPCやスマホへの引っ越し</strong>もこれで行えます（追加方式なので今のデータは消えません）。</p>
+    <div class="tip">
+      <p class="g">消える条件に注意</p>
+      <p>ブラウザの「閲覧データ削除」でサイトデータを消すと、語も消えます。大事にしたい時期は、ときどきバックアップを保存しておくと安心です。</p>
+    </div>
+  </section>
+
+  <section id="mobile">
+    <h2><span class="n">08</span>スマホで使う</h2>
+    <p>公開URL <a href="./">shimi-works.github.io/goi-lab/</a> をスマホのブラウザで開けば、そのまま使えます。</p>
+    <ul>
+      <li><strong>ホーム画面に追加</strong>: ブラウザのメニューから「ホーム画面に追加」すると、アプリのアイコンのように置けます。</li>
+      <li><strong>自分のキーを入力</strong>: スマホとPCはデータが別々です。スマホでも右上からGeminiキーを入れてください（PCの語を移したいときはバックアップJSONで）。</li>
+    </ul>
+  </section>
+
+  <section id="faq">
+    <h2><span class="n">09</span>困ったとき（FAQ）</h2>
+
+    <details>
+      <summary>「無料枠の上限に達しました」と出る</summary>
+      <p>Geminiの無料枠は1分・1日あたりの上限があります。少し待つか、右上「APIキー」設定で<strong>別のモデルに切り替える</strong>と、モデルごとに枠が別なのでまた使えます（アプリは上限時に自動でモデルを切り替えます）。日単位の上限は日本の昼ごろにリセットされます。</p>
+    </details>
+    <details>
+      <summary>「Geminiが一時的に混雑しています」と出る</summary>
+      <p>Google側が混んでいる一時的な状態です（あなたの枠切れではありません）。数十秒待って再試行するか、別のモデルに切り替えてください。アプリも自動で少し待って再試行します。</p>
+    </details>
+    <details>
+      <summary>「APIキーが無効です」と出る</summary>
+      <p>キーの貼り間違いか、まだ有効化されていない可能性があります。<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> でキーを作り直し、右上設定に貼り直してください。</p>
+    </details>
+    <details>
+      <summary>開いても最新版になっていない</summary>
+      <p>公開URL（shimi-works.github.io/goi-lab/）は更新のたびに自動で最新になります。それでも古い場合は<strong>強制リロード</strong>（PCは Ctrl+Shift+R、スマホは再読み込み）でキャッシュを更新してください。以前ドラッグして作った別のURL（Netlify等）は、その時点で固定なので更新されません。</p>
+    </details>
+    <details>
+      <summary>間違えて「覚えた！」以外の語を登録してしまった</summary>
+      <p>語彙帳で語の ✎（編集）を開けば、認知度の変更・語の修正・削除ができます。単語ではない雑学は「豆知識に移す」で移動できます。</p>
+    </details>
+  </section>
+
+  <footer>
+    語彙ラボ 使い方ガイド ／ <a href="./portfolio.html">技術説明・設計思想はこちら</a>
+  </footer>
+
+</div>
+</body>
+</html>
