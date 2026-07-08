@@ -559,9 +559,8 @@ async function showDetail(w){
 }
 function saveWord(d){
   const idx=vocab.findIndex(v=>v.word===d.word);
-  if(idx>=0){ // 既存を最新情報で上書き（学習履歴・認知度は維持）
-    d.ts=vocab[idx].ts; d.due=vocab[idx].due; d.streak=vocab[idx].streak||0;
-    if(d.fam===undefined) d.fam=vocab[idx].fam||0;
+  if(idx>=0){ // 既存を最新の内容で上書き（学習履歴・認知度・SRS状態はマージで維持）
+    d=Object.assign({}, vocab[idx], d);
     vocab[idx]=d;
   }else{
     d.ts=Date.now(); d.due=Date.now(); d.streak=0;
@@ -585,7 +584,7 @@ let bookFilter="__all", famFilter=-1, curCats=[];
 const FAM=[{l:"知らない",c:"f0"},{l:"あやふや",c:"f1"},{l:"知ってる",c:"f2"},{l:"覚えた",c:"f3"}];
 function catOf(v){return (v.category&&v.category.trim())||"未分類";}
 function famOf(v){return v.fam||0;}
-function cycleFam(i){vocab[i].fam=((vocab[i].fam||0)+1)%3;save(LS_VOCAB,vocab);refreshBook();}
+function cycleFam(i){const v=vocab[i];v.fam=((v.fam||0)+1)%4;if(v.fam===3&&!v.masteredAt)v.masteredAt=Date.now();save(LS_VOCAB,vocab);refreshBook();}
 function setFam(k){famFilter=k;refreshBook();}
 function vitemHTML(v){
   const i=vocab.indexOf(v), f=famOf(v);
