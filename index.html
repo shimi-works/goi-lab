@@ -328,6 +328,21 @@
       <button class="btn" onclick="saveKey()">保存</button>
       <button class="btn ghost" onclick="closeKey()">閉じる</button>
     </div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">
+      <label class="flabel">端末間の同期（スマホ ⇄ PC）</label>
+      <p class="hint" style="margin:4px 0 10px">同期コードを発行し、他の端末で同じコードを入力すると、単語帳・豆知識・EXP・実績が自動で同期されます。<b>APIキーは同期されません</b>（端末ごとに設定してください）。コードは合鍵です。他人に教えないでください。</p>
+      <div id="syncCodeRow" class="row" style="display:none;margin-bottom:8px">
+        <code id="syncCodeText" style="user-select:all;font-size:13px"></code>
+        <button class="btn ghost" onclick="syncCopyCode()">コピー</button>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="syncIssueBtn" onclick="syncIssue()">同期コードを発行</button>
+        <button class="btn ghost" id="syncEnterBtn" onclick="syncEnter()">コードを入力</button>
+        <button class="btn ghost" id="syncNowBtn" style="display:none" onclick="syncNow()">今すぐ同期</button>
+        <button class="btn ghost" id="syncOffBtn" style="display:none" onclick="syncOff()">同期を解除</button>
+      </div>
+      <div id="syncStatus" class="hint" style="margin-top:8px"></div>
+    </div>
   </div>
 </div>
 
@@ -471,7 +486,7 @@ function renderLevelPicker(){
   el.innerHTML='<span class="famlabel">レベル：</span>'
     +LEVELS.map((l,k)=>`<button class="fambtn lvbtn ${genLevel===k?'on':''}" data-k="${k}" onclick="setGenLevel(${k})">${l.label}</button>`).join("");
 }
-function setGenLevel(k){genLevel=k;localStorage.setItem(LS_LEVEL,k);renderLevelPicker();}
+function setGenLevel(k){genLevel=k;localStorage.setItem(LS_LEVEL,k);syncTouch(LS_LEVEL);renderLevelPicker();}
 const SOURCES=[
   {label:"すべて",       desc:""},
   {label:"四字熟語",     desc:"必ず四字熟語だけを選ぶこと。"},
@@ -486,7 +501,7 @@ function renderSourcePicker(){
   el.innerHTML='<span class="famlabel">ジャンル：</span>'
     +SOURCES.map((s,k)=>`<button class="fambtn lvbtn ${genSource===k?'on':''}" data-k="${k}" onclick="setGenSource(${k})">${s.label}</button>`).join("");
 }
-function setGenSource(k){genSource=k;localStorage.setItem(LS_SOURCE,k);renderSourcePicker();}
+function setGenSource(k){genSource=k;localStorage.setItem(LS_SOURCE,k);syncTouch(LS_SOURCE);renderSourcePicker();}
 function omakasePrompt(){
   const recent=vocab.slice(-60).map(v=>v.word).join("、");
   const lv=LEVELS[genLevel]||LEVELS[1];
@@ -1084,12 +1099,13 @@ document.getElementById("tabs").addEventListener("click",e=>{
 });
 
 /* ---------- key modal ---------- */
-function openKey(){document.getElementById("keyInput").value=getKey();document.getElementById("modelSelect").value=MODEL;document.getElementById("keyModal").classList.add("open");}
+function openKey(){document.getElementById("keyInput").value=getKey();document.getElementById("modelSelect").value=MODEL;renderSyncUI();document.getElementById("keyModal").classList.add("open");}
 function closeKey(){document.getElementById("keyModal").classList.remove("open");}
 function saveKey(){
   const k=document.getElementById("keyInput").value.trim();
   if(k)localStorage.setItem(LS_KEY,k); else localStorage.removeItem(LS_KEY);
   MODEL=document.getElementById("modelSelect").value; localStorage.setItem(LS_MODEL,MODEL);
+  syncTouch(LS_MODEL);
   closeKey();updateKeyStatus();
 }
 function updateKeyStatus(){
@@ -1135,6 +1151,167 @@ function importData(ev){
     ev.target.value="";
   };
   reader.readAsText(file);
+}
+
+/* ---------- 端末間同期（shimi-sync: 同期コード方式） ----------
+   仕組み: 保存のたびに対象キーをまとめて Cloudflare KV へ送信（デバウンス）。
+   起動時とタブ復帰時に取得し、単語=word単位・豆知識=本文単位で統合マージ。
+   サーバーは楽観ロック(409)で「古い端末による黙った上書き」を拒否する。 */
+const SYNC_URL="https://shimi-sync.shimi-works.workers.dev/v1/goi-lab/";
+const LS_SYNC_CODE="goilab_sync_code", LS_SYNC_BASE="goilab_sync_base", LS_SYNC_DIRTY="goilab_sync_dirty";
+const SYNC_KEYS=[LS_VOCAB,LS_MEMO,LS_XP,LS_ACHV,LS_STREAK,LS_LEVEL,LS_SOURCE,LS_MODEL];  // APIキー・キャッシュは同期しない
+function syncCode(){return localStorage.getItem(LS_SYNC_CODE)||"";}
+function syncBase(){const v=localStorage.getItem(LS_SYNC_BASE);return v==null?null:+v;}
+function setSyncBase(t){localStorage.setItem(LS_SYNC_BASE,String(t));}
+function syncDirtyAt(){return +(localStorage.getItem(LS_SYNC_DIRTY)||0);}
+function syncTouch(k){
+  if(!SYNC_KEYS.includes(k)||!syncCode())return;
+  localStorage.setItem(LS_SYNC_DIRTY,String(Date.now()));
+  schedulePush();
+}
+const saveCore=save;
+save=function(k,v){saveCore(k,v);syncTouch(k);};
+
+function syncCollect(){
+  const d={};
+  SYNC_KEYS.forEach(k=>{const v=localStorage.getItem(k); if(v!=null)d[k]=v;});
+  return d;
+}
+function syncApply(d){SYNC_KEYS.forEach(k=>{if(d[k]!=null)localStorage.setItem(k,d[k]);});}
+function syncParse(s,def){try{return JSON.parse(s)??def}catch(e){return def}}
+function mergeVocab(a,b){   // word単位の統合。重複は復習が進んでいる方（due/tsが大きい方）を残す
+  const score=v=>Math.max(v.due||0,v.ts||0,v.masteredAt||0);
+  const m=new Map();
+  [...a,...b].forEach(v=>{
+    if(!v||!v.word)return;
+    const cur=m.get(v.word);
+    if(!cur||score(v)>=score(cur))m.set(v.word,v);
+  });
+  return [...m.values()];
+}
+function mergeMemos(a,b){   // タイトル+本文で同一視して統合
+  const key=m=>(m.title||"")+" "+(m.body||"");
+  const seen=new Set(), out=[];
+  [...a,...b].forEach(m=>{if(m&&!seen.has(key(m))){seen.add(key(m));out.push(m);}});
+  return out.sort((x,y)=>(x.ts||0)-(y.ts||0));
+}
+function mergeSyncData(L,R,localNewer){
+  const P=localNewer?L:R, S=localNewer?R:L;   // P=新しい側を優先
+  const out={};
+  SYNC_KEYS.forEach(k=>{out[k]=P[k]!=null?P[k]:S[k];});
+  out[LS_VOCAB]=JSON.stringify(mergeVocab(syncParse(L[LS_VOCAB],[]),syncParse(R[LS_VOCAB],[])));
+  out[LS_MEMO]=JSON.stringify(mergeMemos(syncParse(L[LS_MEMO],[]),syncParse(R[LS_MEMO],[])));
+  out[LS_XP]=String(Math.max(syncParse(L[LS_XP],0)||0,syncParse(R[LS_XP],0)||0));
+  out[LS_ACHV]=JSON.stringify([...new Set([...syncParse(L[LS_ACHV],[]),...syncParse(R[LS_ACHV],[])])]);
+  const sa=syncParse(L[LS_STREAK],null), sb=syncParse(R[LS_STREAK],null);
+  if(sa&&sb) out[LS_STREAK]=JSON.stringify(sa.last===sb.last?(sa.count>=sb.count?sa:sb):(sa.last>sb.last?sa:sb));
+  return out;
+}
+function reloadFromStorage(){   // マージ結果をメモリとUIへ反映
+  vocab=load(LS_VOCAB,[]); memos=load(LS_MEMO,[]); xp=load(LS_XP,0); achv=load(LS_ACHV,[]);
+  MODEL=localStorage.getItem(LS_MODEL)||MODEL;
+  genLevel=Math.min(2,Math.max(0,+(localStorage.getItem(LS_LEVEL)??1)));
+  genSource=Math.min(SOURCES.length-1,Math.max(0,+(localStorage.getItem(LS_SOURCE)??0)));
+  refreshBook(); refreshMemo(); renderLevelPicker(); renderSourcePicker();
+}
+let syncTimer=null, syncBusy=false, syncQueued=false;
+function schedulePush(){clearTimeout(syncTimer);syncTimer=setTimeout(doPush,2500);}
+function syncStatusMsg(t){const el=document.getElementById("syncStatus");if(el)el.textContent=t;}
+function syncTime(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${p(d.getHours())}:${p(d.getMinutes())}`;}
+async function adoptRemote(remote){
+  const dirtyAt=syncDirtyAt();
+  if(!dirtyAt){   // 未送信のローカル変更なし→リモートをそのまま採用（他端末での削除もここで反映される）
+    syncApply(remote.data||{}); setSyncBase(remote.updatedAt); reloadFromStorage();
+    syncStatusMsg("同期済み（"+syncTime()+"）"); return;
+  }
+  // 両方に変更がある（衝突）→ 単語・豆知識は和集合でマージして再送。この場合のみ削除が復活しうる
+  const merged=mergeSyncData(syncCollect(),remote.data||{},dirtyAt>remote.updatedAt);
+  syncApply(merged); setSyncBase(remote.updatedAt); reloadFromStorage();
+  await doPush(true);
+}
+async function doPush(immediate){
+  const code=syncCode(); if(!code)return;
+  if(syncBusy){syncQueued=true;return;}
+  syncBusy=true; clearTimeout(syncTimer);
+  try{
+    const body={baseUpdatedAt:syncBase(),updatedAt:Date.now(),data:syncCollect()};
+    const res=await fetch(SYNC_URL+code,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+    if(res.status===409){ const remote=await res.json(); syncBusy=false; await adoptRemote(remote); return; }
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    setSyncBase(body.updatedAt); localStorage.removeItem(LS_SYNC_DIRTY);
+    syncStatusMsg("同期済み（"+syncTime()+"）");
+  }catch(e){
+    syncStatusMsg("同期できませんでした（オフライン？）。次の保存時か「今すぐ同期」で再送します。");
+  }finally{
+    syncBusy=false;
+    if(syncQueued){syncQueued=false;schedulePush();}
+  }
+}
+async function doPull(){
+  const code=syncCode(); if(!code)return;
+  try{
+    const res=await fetch(SYNC_URL+code);
+    if(res.status===404){ await doPush(true); return; }   // クラウド側が空→ローカルを初回アップロード
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const remote=await res.json();
+    if(remote.updatedAt!==syncBase()) await adoptRemote(remote);
+    else if(syncDirtyAt()) await doPush(true);
+    else syncStatusMsg("同期済み（"+syncTime()+"）");
+  }catch(e){
+    syncStatusMsg("同期できませんでした（オフライン？）。接続後に自動で再試行します。");
+  }
+}
+/* --- 同期UI --- */
+function syncNewCode(){
+  const cs="ABCDEFGHJKMNPQRSTUVWXYZ23456789";   // 紛らわしい I/L/O/0/1 は使わない
+  const buf=new Uint32Array(20); crypto.getRandomValues(buf);
+  const s=[...buf].map(n=>cs[n%cs.length]);
+  return [0,1,2,3,4].map(i=>s.slice(i*4,i*4+4).join("")).join("-");
+}
+function renderSyncUI(){
+  const code=syncCode(), on=!!code;
+  const $=id=>document.getElementById(id);
+  if(!$("syncCodeRow"))return;
+  $("syncCodeRow").style.display=on?"flex":"none";
+  $("syncCodeText").textContent=code;
+  $("syncIssueBtn").style.display=on?"none":"";
+  $("syncEnterBtn").style.display=on?"none":"";
+  $("syncNowBtn").style.display=on?"":"none";
+  $("syncOffBtn").style.display=on?"":"none";
+  if(!on)syncStatusMsg("");
+}
+function syncIssue(){
+  localStorage.setItem(LS_SYNC_CODE,syncNewCode());
+  localStorage.removeItem(LS_SYNC_BASE);
+  renderSyncUI(); syncStatusMsg("コードを発行しました。他の端末で「コードを入力」してください。");
+  doPush(true);
+}
+function syncEnter(){
+  const raw=prompt("他の端末で発行した同期コードを入力してください（例: ABCD-EFGH-JKMN-PQRS-TUVW）");
+  if(raw==null)return;
+  const code=raw.trim().toUpperCase();
+  if(!/^[A-HJ-NP-Z2-9]{4}(-[A-HJ-NP-Z2-9]{4}){4}$/.test(code)){alert("コードの形式が正しくありません。");return;}
+  localStorage.setItem(LS_SYNC_CODE,code);
+  localStorage.removeItem(LS_SYNC_BASE);
+  localStorage.setItem(LS_SYNC_DIRTY,String(Date.now()));   // ローカル分もマージで残す
+  renderSyncUI(); syncStatusMsg("同期しています…");
+  doPull();
+}
+function syncNow(){syncStatusMsg("同期しています…");doPull();}
+function syncOff(){
+  if(!confirm("この端末の同期を解除しますか？（データは消えません。クラウド上のデータも残ります）"))return;
+  localStorage.removeItem(LS_SYNC_CODE);localStorage.removeItem(LS_SYNC_BASE);localStorage.removeItem(LS_SYNC_DIRTY);
+  renderSyncUI();
+}
+function syncCopyCode(){
+  navigator.clipboard?.writeText(syncCode()).then(()=>syncStatusMsg("コードをコピーしました。"),()=>{});
+}
+function syncInit(){
+  renderSyncUI();
+  if(syncCode())doPull();
+  document.addEventListener("visibilitychange",()=>{   // タブ復帰時に取得（端末の切替を想定）
+    if(document.visibilityState==="visible"&&syncCode()&&!syncBusy)doPull();
+  });
 }
 
 /* ---------- サンプル語（初回だけ投入） ---------- */
@@ -1195,6 +1372,7 @@ refreshMemo();
 renderLevelPicker();
 renderSourcePicker();
 checkAchievements(true);   // 既に達成済みのものは静かに記録（初回の一斉トースト回避）
+syncInit();
 if(!localStorage.getItem(LS_TUTORIAL)) openTut();
 else if(!getKey()) setTimeout(openKey,400);
 </script>
